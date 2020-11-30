@@ -1,0 +1,148 @@
+// sample
+i = 1
+getNumber = func()
+{
+	i += 1
+	return i
+	i *= 10
+}
+
+printn(pow(getNumber(), getNumber()))
+printn(pow(getNumber(), getNumber()))
+printn(pow(getNumber(), getNumber()))
+
+
+// sample
+a = func()
+	{
+		i = 0
+		while i < 10
+		{ 
+			if i%2==0
+				printn(i)
+			i = i + 1
+		}
+	}
+
+a()
+
+// sample
+a = "Hello "
+b = "World"
+c = a + b
+print(c)
+
+// sample
+i = 1
+value = i + 2 * i - ( pow(2, 3) + 1)
+testX = func()
+{
+	x = 6
+	i = 5
+}
+testX()
+
+printn(i)
+#trace()
+
+// sample
+print("Enter your name: ")
+name = input()
+response = "Hello, " + name
+print(response)
+
+
+// sample
+recursion_test = func(a, b)
+{
+	a += b
+	if (b < 3)
+		recursion_test(a, b+1)
+	a *= b
+}
+
+
+a = 1
+recursion_test(a, 1)
+print("result: " + str(a))
+
+
+// sample OOP
+imported_module = import_module("test_module.ft")
+
+animal = func(size)
+{
+	self = imported_module.object_with_name("animal")
+	self.size = size
+	self.legs = 0
+	self.walk = func()
+	{
+		print("I have size " + str(self.size) + " and walk on " + str(self.legs) + " legs")
+	}
+	return self;
+}
+
+
+human = func()
+{
+	self = animal(4)
+	self.legs = 2
+	self.playSound = func()
+	{
+		print("Hello, it is a sane language")
+	}
+	return self;
+}
+
+cat = func()
+{
+	self = animal(2)
+	self.legs = 4
+	self.playSound = func()
+	{
+		print("Meow")
+	}
+	return self;
+}
+
+person = human()
+cat = cat()
+person.walk()
+person.playSound()
+cat.walk()
+cat.playSound()
+cat.print_name()
+
+imported_module.func_from_module()
+
+//sample "arrays"
+a = array(1, 2, 3, 4);
+print("a[0] is "+str(a.get(0)));
+print("a[1] is "+str(a.get(1)));
+print("a[2] is "+str(a.get(2)));
+print("a[3] is "+str(a.get(3)));
+b = array(a.unroll());
+print("b[0] is "+str(b.get(0)));
+print("b[1] is "+str(b.get(1)));
+print("b[2] is "+str(b.get(2)));
+print("b[3] is "+str(b.get(3)));
+c = array(a.unroll(), b.unroll());
+#c = [ a..., b... ]
+print("c[0] is "+str(c.get(0)));
+print("c[1] is "+str(c.get(1)));
+print("c[2] is "+str(c.get(2)));
+print("c[3] is "+str(c.get(3)));
+print("c[4] is "+str(c.get(4)));
+print("c[5] is "+str(c.get(5)));
+print("c[6] is "+str(c.get(6)));
+print("c[7] is "+str(c.get(7)));
+print("c.size() is "+str(c.size()));
+c.get(7) = 13;
+print("change...");
+print("c[7] is "+str(c.get(7)));
+print("c.size() is "+str(c.size()));
+d = c;
+d.get(6) = 42;
+print("d[5] is "+str(d.get(5)));
+print("d[6] is "+str(d.get(6)));
+print("c[6] is "+str(c.get(6)));

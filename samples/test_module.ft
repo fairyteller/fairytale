@@ -1,0 +1,18 @@
+print("Hello from the module!")
+
+func_from_module = func()
+{
+	print("Function implementation was imported from the module!")
+}
+
+func_from_module()
+
+object_with_name = func(name)
+{
+	obj.name = name
+	obj.print_name = func()
+	{
+		print("my name is "+self.name);
+	}
+	return obj
+}

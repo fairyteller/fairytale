@@ -1,0 +1,14 @@
+a = array();
+i = 0;
+while i < 10
+{
+	a = array(a.unroll(), i);
+	i += 1;
+}
+
+k = 0;
+while k < 10
+{
+	print("a["+str(k)+"] == "+str(a.get(k)));
+	k += 1;
+}
