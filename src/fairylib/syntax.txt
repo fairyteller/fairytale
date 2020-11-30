@@ -1,0 +1,61 @@
+keywords:
+variables: var, auto, int, float, bool, string, object, none
+logic: true, false, is, not, and, or
+with, as
+collections: list, array, dict, tuple, in
+control: if, else, while, for, continue, break
+functions: def, fn, return, lambda
+oop: class, enum, override, method
+generic: define, generic, type, attribute
+state: event, state, react, signal, slot
+
+
+
+
+
+a = 5
+b = a
+5 + 3
+d * 10
+a = 5 + b * 3
+a = -1;
+a = a+1
+a += 1
+a++
+print(1) 
+print(a)
+print("Hello World!");
+pow(a + 1, b)
+b = 1+pow(pow(1,1), pow(a, a));
+
+
+
+
+
+
+
+
+
+
+anySymbol = range(0, 255);
+number = range('0', '9');
+lcLetter = range('a', 'z');
+ucLetter = range('A', 'Z');
+underscore = '_';
+arithmetic_operation = {'+', '-', '*', '/', '=', '&', '|'};
+identifierFirstSymbol = lcLetter + ucLetter + underscore;
+identifierSymbol = identifierFirstSymbol + number;
+
+
+floatNumber << sequence(number) << '.' << optional_sequence(number) << optional('f');
+integerNumber << sequence(number);
+operator << sequence(arithmetic_operation)
+identifier << identifierFirstSymbol << optional_sequence(identifierSymbol);
+stringLiteral << '\"' << optional_sequence(anySymbol) << '\"';
+openParenthesis << '(';
+closedParenthesis << ')';
+
+
+
+
+
