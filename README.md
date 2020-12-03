@@ -41,3 +41,48 @@ obj.getTestObj = func()
 test.assert_eq(obj.getTestObj().sum(10, 25), 35);
 ```
 
+```
+
+animal = func(size)
+{
+	self = imported_module.object_with_name("animal")
+	self.size = size
+	self.legs = 0
+	self.walk = func()
+	{
+		print("I have size " + str(self.size) + " and walk on " + str(self.legs) + " legs")
+	}
+	return self;
+}
+
+
+human = func()
+{
+	self = animal(4)
+	self.legs = 2
+	self.playSound = func()
+	{
+		print("Hello, it is a sane language")
+	}
+	return self;
+}
+
+cat = func()
+{
+	self = animal(2)
+	self.legs = 4
+	self.playSound = func()
+	{
+		print("Meow")
+	}
+	return self;
+}
+
+person = human()
+cat = cat()
+person.walk()
+person.playSound()
+cat.walk()
+cat.playSound()
+cat.print_name()
+```
