@@ -5,10 +5,10 @@ Extendable and fast script language
 WIP, use cmake
 
 ### how lo launch
-use './fairytale' in build directory to run interactive mode or pass script filename as first argument to evaluate the file
+use `./fairytale` in build directory to run interactive mode or pass script filename as first argument to evaluate the file
 
 ### Examples
-'''
+```
 test = import_module("test_module.ft");
 
 #ok, temorary we need this hack, because this name should be global in main global dict
@@ -40,5 +40,5 @@ obj.getTestObj = func()
 }
 a = obj.getTestObj().sum(10, 25);
 test.assert_eq(a, 35);
-'''
+```
 
