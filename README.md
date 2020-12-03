@@ -31,14 +31,13 @@ test.assert_eq(a, 25);
 
 obj.getTestObj = func()
 {
-	testObj = 1;
 	testObj.sum = func(a, b)
 	{
 		return a+b;
 	}
 	return testObj;
 }
-a = obj.getTestObj().sum(10, 25);
-test.assert_eq(a, 35);
+
+test.assert_eq(obj.getTestObj().sum(10, 25), 35);
 ```
 
