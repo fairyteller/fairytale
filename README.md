@@ -11,6 +11,8 @@ WIP, use cmake. I tried to only build it for windows with msvcpp19, but there is
 use `./fairytale` in build directory to run interactive mode or pass script filename as first argument to evaluate the file
 
 ### Examples
+(Github extension for Fairytale syntax highlighting is WIP)
+
 #### Math, lambdas, tests, modules
 ```
 test = import_module("test_module.ft");
