@@ -1,13 +1,17 @@
 # fairytale
 Extendable and fast script language
 
+### download latest version
+CI builds are WIP
+
 ### how to build
-WIP, use cmake
+WIP, use cmake. I tried to only build it for windows with msvcpp19, but there is no platform-dependant code (it has no third-party dependencies at all)
 
 ### how lo launch
 use `./fairytale` in build directory to run interactive mode or pass script filename as first argument to evaluate the file
 
 ### Examples
+#### Math, lambdas, tests, modules
 ```
 test = import_module("test_module.ft");
 
@@ -41,6 +45,7 @@ obj.getTestObj = func()
 test.assert_eq(obj.getTestObj().sum(10, 25), 35);
 ```
 
+#### OOP
 ```
 
 animal = func(size)
