@@ -1,18 +1,14 @@
-print("Hello from the module!")
-
-func_from_module = func()
+test_number = 0
+assert_eq = func(expression, expected_result)
 {
-	print("Function implementation was imported from the module!")
-}
-
-func_from_module()
-
-object_with_name = func(name)
-{
-	obj.name = name
-	obj.print_name = func()
+	if (expression == expected_result)
 	{
-		print("my name is "+self.name);
+		print("Test "+str(test_number)+": Passed");
 	}
-	return obj
+	else
+	{
+		print("Test "+str(test_number)+": Failed!");
+		print("	evaluated to "+str(expression)+", expected: "+str(expected_result));
+	}
+	test_number+=1;
 }

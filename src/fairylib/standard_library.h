@@ -230,6 +230,12 @@ void __more_eq_than__(Runtime* pRuntime, objectId context)
 	pRuntime->push_on_stack(result);
 }
 
+void __minus_prefix__(Runtime* pRuntime, objectId context)
+{
+	FairyObject* rhs = pRuntime->getObject(pRuntime->pop_from_stack());
+	objectId result = pRuntime->allocate(-rhs->asLong());
+	pRuntime->push_on_stack(result);
+}
 
 void print_wrapper(Runtime* pRuntime, objectId context)
 {

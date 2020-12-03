@@ -165,7 +165,7 @@ struct Rules
 	{
 		spacesAndTabs.set('\t').unite(' ');
 		digit.set({ '0' , '9' });
-		operatorSymbols.set('+').unite('-').unite('*').unite('/').unite('=').unite('>').unite('<').unite('&').unite('|').unite('!').unite('%').unite('.');
+		operatorSymbols.set('+').unite('-').unite('*').unite('/').unite('=').unite('>').unite('<').unite('&').unite('|').unite('!').unite('%').unite('.').unite('@');
 		parenthesis.set('(').unite(')').unite(',');
 		brace.set('{').unite('}');
 		englishLetters.set({ 'A','Z' }).unite({ 'a', 'z' });
@@ -204,6 +204,8 @@ struct Rules
 		binaryOperatorPrecedence["*"] = 40;
 		binaryOperatorPrecedence["%"] = 40;
 		binaryOperatorPrecedence["/"] = 40;
+		binaryOperatorPrecedence["@"] = 45;
+		binaryOperatorPrecedence["("] = 48;
 		binaryOperatorPrecedence["."] = 50;
 	}
 };
@@ -229,6 +231,8 @@ public:
 	std::unique_ptr<ASTNode> ParseStringExpr();
 
 	std::vector < std::string> ParseFunctionSignature();
+
+	std::unique_ptr<ASTNode> ParsePrefixUnaryOperator();
 	std::unique_ptr<ASTNode> ParseFunctionDeclaration();
 	std::unique_ptr<ASTNode> ParseNumberExpr();
 
@@ -718,7 +722,29 @@ public:
 		: Op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		LHS->execute(pRuntime, context);
+		if (LHS.get())
+			LHS->execute(pRuntime, context);
+		if (RHS.get())
+			RHS->execute(pRuntime, context);
+		stringId sid = pRuntime->getStringTable().getStringId(Op);
+		objectId oid = pRuntime->get_existing_object_or_allocate(context, sid);
+		pRuntime->call(oid);
+	}
+};
+
+class PrefixOperatorExprASTN : public ASTNode {
+	std::string Op;
+	std::unique_ptr<ASTNode> RHS;
+
+public:
+	PrefixOperatorExprASTN(const std::string& op)
+		: Op(op+"pref") {}
+	void setRHS(std::unique_ptr<ASTNode> rhs)
+	{
+		RHS = std::move(rhs);
+	}
+	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	{
 		RHS->execute(pRuntime, context);
 		stringId sid = pRuntime->getStringTable().getStringId(Op);
 		objectId oid = pRuntime->get_existing_object_or_allocate(context, sid);
@@ -737,28 +763,30 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		LHS->execute(pRuntime, context);
-		objectId oid = pRuntime->pop_from_stack();
+		objectId oid = pRuntime->soft_pop_from_stack();
 		RHS->execute(pRuntime, oid);
+		pRuntime->dec_ref(oid);
 	}
 };
 
 class CallExprASTN : public ASTNode {
-	std::string Callee;
+	std::unique_ptr<ASTNode> Callee;
 	std::vector<std::unique_ptr<ASTNode>> Args;
 
 public:
-	CallExprASTN(const std::string& Callee,
+	CallExprASTN(std::unique_ptr<ASTNode> Callee, 
 		std::vector<std::unique_ptr<ASTNode>> Args)
-		: Callee(Callee), Args(std::move(Args)) {}
+		: Callee(std::move(Callee)), Args(std::move(Args)) {}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
+		Callee->execute(pRuntime, context);
+		objectId calleeId = pRuntime->soft_pop_from_stack();
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
 		}
-		stringId sid = pRuntime->getStringTable().getStringId(Callee);
-		objectId oid = pRuntime->get_existing_object_or_allocate(context, sid);
-		pRuntime->call(oid, context);
+		pRuntime->call(calleeId, context);
+		pRuntime->dec_ref(calleeId);
 	}
 };
 
