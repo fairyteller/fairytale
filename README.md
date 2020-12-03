@@ -47,7 +47,7 @@ obj.getTestObj = func()
 test.assert_eq(obj.getTestObj().sum(10, 25), 35);
 ```
 
-#### OOP
+#### OOP-like code (proper classes are in roadmap after strong typing)
 ```
 
 animal = func(size)
