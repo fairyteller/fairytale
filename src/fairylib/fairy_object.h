@@ -32,6 +32,7 @@ enum class FairyObjectType
 	String,
 	WrappedFunction,
 	FairyFunction,
+	Object,
 	Class,
 };
 

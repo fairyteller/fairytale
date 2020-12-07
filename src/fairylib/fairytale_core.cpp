@@ -134,6 +134,13 @@ void Lexer::tokenize(const std::string& input)
 			currIndex = nextIndex;
 			continue;
 		}
+		nextIndex = rules.squareBracetRule.checkIfToken(input.c_str(), currIndex);
+		if (nextIndex != currIndex)
+		{
+			tokens.push_back(rules.squareBracetRule.build(input, currIndex, nextIndex));
+			currIndex = nextIndex;
+			continue;
+		}
 		nextIndex = rules.parenthesisRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
@@ -271,7 +278,7 @@ Runtime::Runtime(FairytaleCore* pCore)
 	register_function(">", __more_than__);
 	register_function("<=", __less_eq_than__);
 	register_function(">=", __more_eq_than__);
-	register_function("@", __minus_prefix__);
+	register_function("-prefix", __minus_prefix__);
 	register_function("=", assign);
 	register_function("print", print_wrapper);
 	register_function("trace", trace);
@@ -383,32 +390,7 @@ std::unique_ptr<ASTNode> Lexer::ParseIdentifierExpr() {
 
 	currentToken++;
 
-//	if (tokens[currentToken].type != TokenType::OpenParenthesis) // Simple variable ref or true/false
-		return std::make_unique<VariableASTN>(IdName);
-
-	// Call.
-//	currentToken++;  // eat (
-//	std::vector<std::unique_ptr<ASTNode>> Args;
-//	if (tokens[currentToken].type != TokenType::ClosedParenthesis){
-//		while (1) {
-//			if (auto Arg = ParseExpression())
-//				Args.push_back(std::move(Arg));
-//			else
-//				return nullptr;
-//
-//			if (tokens[currentToken].type == TokenType::ClosedParenthesis)
-//				break;
-//
-//			if (tokens[currentToken].type != TokenType::Comma)
-//				assert(!"Expected ')' or ',' in argument list");
-//			currentToken++;
-//		}
-//	}
-//
-//	// Eat the ')'.
-//	currentToken++;
-//
-//	return std::make_unique<CallExprASTN>(IdName, std::move(Args));
+	return std::make_unique<VariableASTN>(IdName);
 }
 
 
@@ -580,15 +562,18 @@ std::unique_ptr<ASTNode> Lexer::ParseBinaryOperatorRHS(int ExprPrec,
 			currentToken++;
 			return LHS;
 		}
-		int TokPrec = rules.GetOperatorPrecedence(tokens[currentToken].content);
+		std::string currOp = tokens[currentToken].content;
+		if (!LHS)
+		{
+			currOp += "prefix";
+		}
+		int TokPrec = rules.GetOperatorPrecedence(currOp);
 
 		// If this is a binop that binds at least as tightly as the current binop,
 		// consume it, otherwise we are done.
 		if (TokPrec < ExprPrec)
 			return LHS;
 
-		// Okay, we know this is a binop.
-		std::string currOp = tokens[currentToken].content;
 
 		std::unique_ptr<ASTNode> RHS;
 		if (tokens[currentToken].type == TokenType::OpenParenthesis)
@@ -614,17 +599,46 @@ std::unique_ptr<ASTNode> Lexer::ParseBinaryOperatorRHS(int ExprPrec,
 
 			LHS = std::make_unique<CallExprASTN>(std::move(LHS), std::move(Args));
 			continue;
-			//if (tokens[currentToken].type != TokenType::ExpressionEnd)
-			//	return ParseBinaryOperatorRHS(TokPrec + 1, std::move(LHS));
-			//return std::move(LHS);
+		}
+		else if (tokens[currentToken].type == TokenType::OpenSquareBrace)
+		{
+			currentToken++;  // eat (
+			std::vector<std::unique_ptr<ASTNode>> Args;
+			while (tokens[currentToken].type != TokenType::ClosedSquareBrace) {
+				if (auto Arg = ParseExpression())
+					Args.push_back(std::move(Arg));
+				else
+					return nullptr;
+
+				if (tokens[currentToken].type == TokenType::ClosedSquareBrace)
+					break;
+
+				if (tokens[currentToken].type != TokenType::Comma)
+					assert(!"Expected ')' or ',' in argument list");
+				currentToken++;
+			}
+
+			// Eat the ')'.
+			currentToken++;
+
+			LHS = std::make_unique<IndexExprASTN>(std::move(LHS), std::move(Args));
+			continue;
 		}
 		else
 		{
 			currentToken++;
 			// Parse the primary expression after the binary operator.
 			RHS = ParsePrimary();
-			if (!RHS && tokens[currentToken].type != TokenType::BinaryOperator)
-				return nullptr;
+			if (!RHS)
+			{
+				if (tokens[currentToken].type != TokenType::BinaryOperator)
+					return nullptr;
+				else
+				{
+					RHS = ParseBinaryOperatorRHS(TokPrec + 1, nullptr);
+				}
+			}
+			
 		}
 
 		// If BinOp binds less tightly with RHS than the operator after RHS, let

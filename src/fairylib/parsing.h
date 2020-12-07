@@ -88,6 +88,8 @@ enum class TokenType
 	ClosedParenthesis,
 	OpenBrace,
 	ClosedBrace,
+	OpenSquareBrace,
+	ClosedSquareBrace,
 	Comma,
 	If,
 	While,
@@ -96,7 +98,8 @@ enum class TokenType
 	EndOfStream,
 	Func,
 	Import,
-	Return
+	Return,
+	Class,
 };
 
 struct Token

@@ -28,6 +28,7 @@ struct Rules
 	RangeBasedFilter spacesAndTabs;
 	RangeBasedFilter digit;
 	RangeBasedFilter brace;
+	RangeBasedFilter squareBrace;
 	RangeBasedFilter operatorSymbols;
 	RangeBasedFilter openParenthesis;
 	RangeBasedFilter englishLetters;
@@ -49,6 +50,7 @@ struct Rules
 	TokenRules expressionEndRule;
 	TokenRules stringLiteralRule;
 	TokenRules commentRule;
+	TokenRules squareBracetRule;
 
 	std::map<std::string, int> binaryOperatorPrecedence;
 
@@ -90,6 +92,16 @@ struct Rules
 		return token;
 	}
 
+	static Token createSquareBraceToken(const std::string& input, size_t startIndex, size_t endIndex)
+	{
+		Token token;
+		if (input[startIndex] == '[')
+			token.type = TokenType::OpenSquareBrace;
+		if (input[startIndex] == ']')
+			token.type = TokenType::ClosedSquareBrace;
+		token.content = input[startIndex];
+		return token;
+	}
 	static Token createOperatorToken(const std::string& input, size_t startIndex, size_t endIndex)
 	{
 		Token token;
@@ -168,6 +180,7 @@ struct Rules
 		operatorSymbols.set('+').unite('-').unite('*').unite('/').unite('=').unite('>').unite('<').unite('&').unite('|').unite('!').unite('%').unite('.').unite('@');
 		parenthesis.set('(').unite(')').unite(',');
 		brace.set('{').unite('}');
+		squareBrace.set('[').unite(']');
 		englishLetters.set({ 'A','Z' }).unite({ 'a', 'z' });
 		validIdentifierFirstSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_');
 		validIdentifierSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_').unite({ '0','9' });
@@ -183,6 +196,7 @@ struct Rules
 		identifierRule.setFactory(createIdentifierToken) << SymbolSequence{ 1, 1, validIdentifierFirstSymbol } << SymbolSequence{ 0, UINT32_MAX, validIdentifierSymbol };
 		parenthesisRule.setFactory(createParenthesisToken) << SymbolSequence{ 1, 1, parenthesis };
 		braceRule.setFactory(createBraceToken) << SymbolSequence{ 1, 1, brace };
+		squareBracetRule.setFactory(createSquareBraceToken) << SymbolSequence{ 1, 1, squareBrace };
 		expressionEndRule.setFactory(createExpressionEndToken) << SymbolSequence{ 1, 1, expressionEnd };
 		stringLiteralRule.setFactory(createStringLiteralToken) << SymbolSequence{ 1, 1, quote} << SymbolSequence{0, UINT32_MAX, stringContentSymbol } << SymbolSequence{1, 1, quote};
 		commentRule.setFactory(nullptr) << SymbolSequence{ 1, 1, numberSign } << SymbolSequence{ 0, UINT32_MAX, commentContentSymbol } << SymbolSequence{ 1, 1, commentEnd };
@@ -204,8 +218,9 @@ struct Rules
 		binaryOperatorPrecedence["*"] = 40;
 		binaryOperatorPrecedence["%"] = 40;
 		binaryOperatorPrecedence["/"] = 40;
-		binaryOperatorPrecedence["@"] = 45;
+		binaryOperatorPrecedence["-prefix"] = 45;
 		binaryOperatorPrecedence["("] = 48;
+		binaryOperatorPrecedence["["] = 48;
 		binaryOperatorPrecedence["."] = 50;
 	}
 };
@@ -764,6 +779,7 @@ public:
 	{
 		LHS->execute(pRuntime, context);
 		objectId oid = pRuntime->soft_pop_from_stack();
+		pRuntime->push_on_stack(oid);
 		RHS->execute(pRuntime, oid);
 		pRuntime->dec_ref(oid);
 	}
@@ -781,14 +797,45 @@ public:
 	{
 		Callee->execute(pRuntime, context);
 		objectId calleeId = pRuntime->soft_pop_from_stack();
+		objectId callContext = context;
+		if (pRuntime->get_amount_of_objects_in_stack_frame())
+		{
+			callContext = pRuntime->pop_from_stack();
+			// TODO: fix that temporary object could be deleted after pop
+		}
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
 		}
-		pRuntime->call(calleeId, context);
+		pRuntime->call(calleeId, callContext);
 		pRuntime->dec_ref(calleeId);
 	}
 };
+
+
+class IndexExprASTN : public ASTNode {
+	std::unique_ptr<ASTNode> Collection;
+	std::vector<std::unique_ptr<ASTNode>> Args;
+
+public:
+	IndexExprASTN(std::unique_ptr<ASTNode> Collection,
+		std::vector<std::unique_ptr<ASTNode>> Args)
+		: Collection(std::move(Collection)), Args(std::move(Args)) {}
+	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	{
+		Collection->execute(pRuntime, context);
+		objectId collectionId = pRuntime->soft_pop_from_stack();
+		for (auto& arg : Args)
+		{
+			arg->execute(pRuntime, context);
+		}
+		stringId indexMethodSID = pRuntime->getStringTable().getStringId("__index__");
+		objectId indexMethod = pRuntime->getObject(collectionId)->getattr(pRuntime, indexMethodSID);
+		pRuntime->call(indexMethod, context);
+		pRuntime->dec_ref(collectionId);
+	}
+};
+
 
 class RootASTN : public ASTNode {
 	std::unique_ptr<ASTNode> body;
