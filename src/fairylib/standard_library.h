@@ -153,45 +153,89 @@ void sum_compound(Runtime* pRuntime, objectId context)
 	pRuntime->dec_ref(lhsId);
 }
 
-//void sub_compound(Runtime* pRuntime, objectId context)
-//{
-//	FairyObject* rhs = pRuntime->getObject(pRuntime->pop_from_stack());
-//	objectId lhsId = pRuntime->pop_from_stack();
-//	FairyObject* lhs = pRuntime->getObject(lhsId);
-//	*lhs -= *rhs;
-//	pRuntime->push_on_stack(lhsId);
-//}
-//
-//
-//void mul_compound(Runtime* pRuntime, objectId context)
-//{
-//	FairyObject* rhs = pRuntime->getObject(pRuntime->pop_from_stack());
-//	objectId lhsId = pRuntime->pop_from_stack();
-//	FairyObject* lhs = pRuntime->getObject(lhsId);
-//	*lhs *= *rhs;
-//	pRuntime->push_on_stack(lhsId);
-//}
-//
-//
-//void div_compound(Runtime* pRuntime, objectId context)
-//{
-//	FairyObject* rhs = pRuntime->getObject(pRuntime->pop_from_stack());
-//	objectId lhsId = pRuntime->pop_from_stack();
-//	FairyObject* lhs = pRuntime->getObject(lhsId);
-//	*lhs /= *rhs;
-//	pRuntime->push_on_stack(lhsId);
-//}
-//
-//
-//void mod_compound(Runtime* pRuntime, objectId context)
-//{
-//	FairyObject* rhs = pRuntime->getObject(pRuntime->pop_from_stack());
-//	objectId lhsId = pRuntime->pop_from_stack();
-//	FairyObject* lhs = pRuntime->getObject(lhsId);
-//	*lhs %= *rhs;
-//	pRuntime->push_on_stack(lhsId);
-//}
-//
+void sub_compound(Runtime* pRuntime, objectId context)
+{
+	objectId rhsId = pRuntime->soft_pop_and_deref_id_from_stack();
+	objectId lhsId = pRuntime->soft_pop_from_stack();
+
+	pRuntime->push_on_stack(pRuntime->dereference(lhsId));
+	pRuntime->push_on_stack(rhsId);
+	sub_wrapper(pRuntime, context);
+	objectId sumResult = pRuntime->soft_pop_from_stack();
+
+	FairyObject* rhs = pRuntime->getObject(rhsId);
+	FairyObject* lhs = pRuntime->getObject(lhsId);
+	assert(lhs->getType() == FairyObjectType::Reference);
+	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, sumResult);
+	pRuntime->push_on_stack(lhsId);
+	pRuntime->dec_ref(rhsId);
+	pRuntime->dec_ref(sumResult);
+	pRuntime->dec_ref(lhsId);
+}
+
+
+void mul_compound(Runtime* pRuntime, objectId context)
+{
+	objectId rhsId = pRuntime->soft_pop_and_deref_id_from_stack();
+	objectId lhsId = pRuntime->soft_pop_from_stack();
+
+	pRuntime->push_on_stack(pRuntime->dereference(lhsId));
+	pRuntime->push_on_stack(rhsId);
+	mul_wrapper(pRuntime, context);
+	objectId sumResult = pRuntime->soft_pop_from_stack();
+
+	FairyObject* rhs = pRuntime->getObject(rhsId);
+	FairyObject* lhs = pRuntime->getObject(lhsId);
+	assert(lhs->getType() == FairyObjectType::Reference);
+	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, sumResult);
+	pRuntime->push_on_stack(lhsId);
+	pRuntime->dec_ref(rhsId);
+	pRuntime->dec_ref(sumResult);
+	pRuntime->dec_ref(lhsId);
+}
+
+
+void div_compound(Runtime* pRuntime, objectId context)
+{
+	objectId rhsId = pRuntime->soft_pop_and_deref_id_from_stack();
+	objectId lhsId = pRuntime->soft_pop_from_stack();
+
+	pRuntime->push_on_stack(pRuntime->dereference(lhsId));
+	pRuntime->push_on_stack(rhsId);
+	div_wrapper(pRuntime, context);
+	objectId sumResult = pRuntime->soft_pop_from_stack();
+
+	FairyObject* rhs = pRuntime->getObject(rhsId);
+	FairyObject* lhs = pRuntime->getObject(lhsId);
+	assert(lhs->getType() == FairyObjectType::Reference);
+	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, sumResult);
+	pRuntime->push_on_stack(lhsId);
+	pRuntime->dec_ref(rhsId);
+	pRuntime->dec_ref(sumResult);
+	pRuntime->dec_ref(lhsId);
+}
+
+
+void mod_compound(Runtime* pRuntime, objectId context)
+{
+	objectId rhsId = pRuntime->soft_pop_and_deref_id_from_stack();
+	objectId lhsId = pRuntime->soft_pop_from_stack();
+
+	pRuntime->push_on_stack(pRuntime->dereference(lhsId));
+	pRuntime->push_on_stack(rhsId);
+	wrap<long long, long long, long long, __mod__>()(pRuntime, context);
+	objectId sumResult = pRuntime->soft_pop_from_stack();
+
+	FairyObject* rhs = pRuntime->getObject(rhsId);
+	FairyObject* lhs = pRuntime->getObject(lhsId);
+	assert(lhs->getType() == FairyObjectType::Reference);
+	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, sumResult);
+	pRuntime->push_on_stack(lhsId);
+	pRuntime->dec_ref(rhsId);
+	pRuntime->dec_ref(sumResult);
+	pRuntime->dec_ref(lhsId);
+}
+
 
 
 void __is_eq__(Runtime* pRuntime, objectId context)

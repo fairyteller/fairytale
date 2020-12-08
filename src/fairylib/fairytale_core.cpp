@@ -275,10 +275,10 @@ Runtime::Runtime(FairytaleCore* pCore)
 	register_global_function("/", wrap<long long, long long, long long, __div__>());
 	register_global_function("%", wrap<long long, long long, long long, __mod__>());
 	register_global_function("+=", sum_compound);
-//	register_global_function("-=", sub_compound);
-//	register_global_function("*=", mul_compound);
-//	register_global_function("/=", div_compound);
-//	register_global_function("%=", mod_compound);
+	register_global_function("-=", sub_compound);
+	register_global_function("*=", mul_compound);
+	register_global_function("/=", div_compound);
+	register_global_function("%=", mod_compound);
 	register_global_function("==", __is_eq__);
 	register_global_function("!=", __is_neq__);
 	register_global_function("<", __less_than__);
@@ -541,16 +541,6 @@ std::unique_ptr<ASTNode> Lexer::ParsePrimary() {
 	case TokenType::ExpressionEnd:
 		return nullptr;
 	}
-}
-
-std::unique_ptr<ASTNode> Lexer::ParsePrefixUnaryOperator() {
-
-	std::string currOp = tokens[currentToken].content;
-	auto opAST = std::make_unique<PrefixOperatorExprASTN>(currOp);
-	++currentToken;
-	auto RHS = ParsePrimary();
-	opAST->setRHS(std::move(RHS));
-	return std::move(opAST);
 }
 
 std::unique_ptr<ASTNode> Lexer::ParseExpression() {
