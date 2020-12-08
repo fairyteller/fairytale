@@ -17,26 +17,32 @@ use `./fairytale` in build directory to run interactive mode or pass script file
 ```
 test = import_module("test_module.ft");
 
-#ok, temorary we need this hack, because this name should be global in main global dict
-test_number = test.test_number;
+test.assert_eq(true, true);
 
-test.assert_eq(2+pow(2,1*3)+2*3, 16)
+a = 3
+test.assert_eq(-2+pow(2,1*a)+2*a, 12)
+
+test.assert_eq(-2* -2, 4)
 
 sum = func(a, b)
 {
 	return a+b;
 }
 
+test.assert_eq(sum(5, 10), 15);
+
 getSum = func()
 {
-	return sum;
+	return self.sum; #TODO: fix self. !
 }
 
 a = getSum()(10, 15);
 test.assert_eq(a, 25);
 
+obj = object();
 obj.getTestObj = func()
 {
+	testObj = object();
 	testObj.sum = func(a, b)
 	{
 		return a+b;
@@ -45,6 +51,17 @@ obj.getTestObj = func()
 }
 
 test.assert_eq(obj.getTestObj().sum(10, 25), 35);
+
+b = array(1, 2, 3, 4, 5);
+test.assert_eq(b.size(), 5);
+
+test.assert_eq(b[2], 3);
+
+b = array(b.unroll());
+test.assert_eq(b[2], 3);
+
+b[3] = 10;
+test.assert_eq(b[3], 10);
 ```
 
 #### OOP-like code (proper classes are in roadmap after strong typing)
