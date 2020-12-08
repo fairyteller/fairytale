@@ -1,4 +1,5 @@
 #pragma once
+#include "string_table.h"
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -18,8 +19,6 @@ typedef void (*WrappedFunction)(Runtime*, objectId);
 
 
 extern bool g_trace;
-typedef size_t stringId;
-
 
 typedef std::unordered_map<stringId, objectId> FairyTable;
 
@@ -36,6 +35,7 @@ enum class FairyObjectType
 	Array,
 	Reference,
 	Class,
+	Deleted
 };
 
 struct FairyReference
