@@ -356,38 +356,16 @@ public:
 		freeIds.push(id);
 	}
 
-	void name_object(stringId sid, objectId od)
-	{
-		globalObjectTable[sid] = od;
-		nameUsageStack.push(sid);
-		inc_ref(od);
-	}
-
-	void name_object(objectId parentTable, stringId sid, objectId od)
+	void assign_name_to_obj(objectId parentTable, stringId sid, objectId od)
 	{
 		getObject(parentTable)->setattr(this, sid, od);
 	}
 
-	void unbind_name(stringId strId)
-	{
-		dec_ref(globalObjectTable[strId]);
-		globalObjectTable.erase(strId);
-	}
-
-	template<class T>
-	objectId allocate_and_name(stringId strId, T value)
-	{
-		objectId id = allocate(value);
-		name_object(strId, id);
-		return id;
-	}
-
-	template<class T>
-	objectId allocate_and_name(const char* s, T value)
-	{
-		stringId strId = m_stringTable.getStringId(s);
-		return allocate_and_name(strId, value);
-	}
+//	void unbind_name(stringId strId)
+//	{
+//		dec_ref(getObject(globalScopeObject)->get_table()[strId]);
+//		getObject(globalScopeObject)->get_table().erase(strId);
+//	}
 
 	template<class T>
 	void put_literal_on_stack(T value)
@@ -441,6 +419,28 @@ public:
 		return id;
 	}
 
+
+
+	objectId pop_and_deref_id_from_stack()
+	{
+		return dereference(pop_from_stack());
+	}
+
+	FairyObject* pop_and_deref_object_from_stack()
+	{
+		return getObject(pop_and_deref_id_from_stack());
+	}
+
+	objectId soft_pop_and_deref_id_from_stack()
+	{
+		return dereference(soft_pop_from_stack());
+	}
+
+	FairyObject* soft_pop_and_deref_object_from_stack()
+	{
+		return getObject(soft_pop_and_deref_id_from_stack());
+	}
+
 	objectId stack_top()
 	{
 		return interpreterStack.top();
@@ -464,35 +464,16 @@ public:
 		return m_stringTable;
 	}
 
-	objectId get_existing_object_or_allocate(stringId strId)
-	{
-		auto iter = globalObjectTable.find(strId);
-		if (iter == globalObjectTable.end())
-		{
-			objectId id = allocate_empty();
-			name_object(strId, id);
-			return id;
-		}
-		else
-		{
-			return iter->second;
-		}
-	}
-
 	objectId get_existing_object_or_allocate(objectId parentTable, stringId strId)
 	{
-		if (parentTable == -1)
-		{
-			return get_existing_object_or_allocate(strId);
-		}
 		auto iter = getObject(parentTable)->get_table().find(strId);
 		if (iter == getObject(parentTable)->get_table().end())
 		{
-			iter = globalObjectTable.find(strId);
-			if (iter == globalObjectTable.end())
+			iter = getObject(globalScopeObject)->get_table().find(strId);
+			if (iter == getObject(globalScopeObject)->get_table().end())
 			{
 				objectId id = allocate_empty();
-				name_object(parentTable, strId, id);
+				assign_name_to_obj(parentTable, strId, id);
 				return id;
 			}
 			else
@@ -506,10 +487,24 @@ public:
 		}
 	}
 
-	objectId register_function(const char* name, WrappedFunction fn)
+	objectId dereference(objectId oid)
 	{
-		objectId id = allocate_and_name(name, fn);
-		return id;
+		FairyObject* pObj = getObject(oid);
+		objectId result = oid;
+		if (pObj->getType() == FairyObjectType::Reference)
+		{
+			result = getObject(pObj->asReference().ownerTable)->getattr(this, pObj->asReference().attributeKey);
+		}
+		inc_ref(result); // maybe leak
+		return result;
+	}
+
+	objectId register_global_function(const char* name, WrappedFunction fn)
+	{
+		stringId sid = getStringTable().getStringId(name);
+		objectId functionId = allocate(fn);
+		assign_name_to_obj(globalScopeObject, sid, functionId);
+		return functionId;
 	}
 
 	void call(objectId id, objectId context = -1);
@@ -543,7 +538,7 @@ public:
 	template<>
 	long long pop<long long>()
 	{
-		return getObject(pop_from_stack())->asLong();
+		return pop_and_deref_object_from_stack()->asLong();
 	}
 
 	void inc_ref(objectId id)
@@ -573,7 +568,7 @@ public:
 	void trace_names()
 	{
 		std::cout << "\nTrace Names:\n";
-		for (auto& obj : globalObjectTable)
+		for (auto& obj : getObject(globalScopeObject)->get_table())
 		{
 			std::cout << getStringTable().getString(obj.first) << " - " << getObject(obj.second)->describe() << "\n";
 		}
@@ -599,7 +594,7 @@ public:
 		}
 		while (nameUsageStack.size() > frame.nameUsageStackTop)
 		{
-			unbind_name(nameUsageStack.top());
+//			unbind_name(nameUsageStack.top());
 			nameUsageStack.pop();
 		}
 
@@ -633,6 +628,11 @@ public:
 		regId = -1;
 		return id;
 	}
+
+	objectId getGlobalScope()
+	{
+		return globalScopeObject;
+	}
 private:
 	struct StackFrame
 	{
@@ -642,7 +642,8 @@ private:
 	StringTable m_stringTable;
 	std::vector<FairyObject> allocatedObjects;
 	std::stack<objectId> freeIds;
-	FairyTable globalObjectTable;
+	//FairyTable globalObjectTable;
+	objectId globalScopeObject;
 	std::stack<objectId> interpreterStack;
 	std::stack<stringId> nameUsageStack;
 	std::stack<StackFrame> stackFrames;
@@ -723,7 +724,8 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		stringId id = pRuntime->getStringTable().getStringId(Name);
-		pRuntime->push_on_stack(pRuntime->get_existing_object_or_allocate(context, id));
+		pRuntime->push_on_stack(pRuntime->allocate(FairyReference{ context, id }));
+		pRuntime->inc_ref(context);
 	}
 };
 
@@ -735,7 +737,7 @@ public:
 	BinaryExprASTN(const std::string& op, std::unique_ptr<ASTNode> LHS,
 		std::unique_ptr<ASTNode> RHS)
 		: Op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
-	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	virtual void execute(Runtime* pRuntime, objectId context)
 	{
 		if (LHS.get())
 			LHS->execute(pRuntime, context);
@@ -758,7 +760,7 @@ public:
 	{
 		RHS = std::move(rhs);
 	}
-	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	virtual void execute(Runtime* pRuntime, objectId context)
 	{
 		RHS->execute(pRuntime, context);
 		stringId sid = pRuntime->getStringTable().getStringId(Op);
@@ -779,8 +781,8 @@ public:
 	{
 		LHS->execute(pRuntime, context);
 		objectId oid = pRuntime->soft_pop_from_stack();
-		pRuntime->push_on_stack(oid);
-		RHS->execute(pRuntime, oid);
+		objectId dereferencedId = pRuntime->dereference(oid);
+		RHS->execute(pRuntime, dereferencedId);
 		pRuntime->dec_ref(oid);
 	}
 };
@@ -793,22 +795,27 @@ public:
 	CallExprASTN(std::unique_ptr<ASTNode> Callee, 
 		std::vector<std::unique_ptr<ASTNode>> Args)
 		: Callee(std::move(Callee)), Args(std::move(Args)) {}
-	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	virtual void execute(Runtime* pRuntime, objectId context)
 	{
 		Callee->execute(pRuntime, context);
 		objectId calleeId = pRuntime->soft_pop_from_stack();
-		objectId callContext = context;
-		if (pRuntime->get_amount_of_objects_in_stack_frame())
-		{
-			callContext = pRuntime->pop_from_stack();
-			// TODO: fix that temporary object could be deleted after pop
-		}
+		objectId derefCalleeId = pRuntime->dereference(calleeId);
+
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
 		}
-		pRuntime->call(calleeId, callContext);
+		FairyObject* pObj = pRuntime->getObject(calleeId);
+		if (pObj->getType() == FairyObjectType::Reference)
+		{
+			pRuntime->call(derefCalleeId, pObj->asReference().ownerTable);
+		}
+		else
+		{
+			pRuntime->call(derefCalleeId, context);
+		}
 		pRuntime->dec_ref(calleeId);
+		pRuntime->dec_ref(derefCalleeId);
 	}
 };
 
@@ -824,14 +831,14 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		Collection->execute(pRuntime, context);
-		objectId collectionId = pRuntime->soft_pop_from_stack();
+		objectId collectionId = pRuntime->soft_pop_and_deref_id_from_stack();
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
 		}
 		stringId indexMethodSID = pRuntime->getStringTable().getStringId("__index__");
 		objectId indexMethod = pRuntime->getObject(collectionId)->getattr(pRuntime, indexMethodSID);
-		pRuntime->call(indexMethod, context);
+		pRuntime->call(indexMethod, collectionId);
 		pRuntime->dec_ref(collectionId);
 	}
 };
@@ -846,12 +853,11 @@ public:
 	}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		objectId global_scope = pRuntime->allocate_empty();
-		pRuntime->inc_ref(global_scope);
-		body->execute(pRuntime, global_scope);
-		pRuntime->push_on_stack(global_scope);
-		pRuntime->dec_ref(global_scope);
-
+		objectId module_scope = pRuntime->copy_object(pRuntime->getGlobalScope());
+		pRuntime->inc_ref(module_scope);
+		body->execute(pRuntime, module_scope);
+		pRuntime->push_on_stack(module_scope);
+		pRuntime->dec_ref(module_scope);
 	}
 };
 
@@ -959,23 +965,20 @@ public:
 	{
 		functionBody = std::move(node);
 	}
-	virtual void call(Runtime* pRuntime, objectId self = -1)
+	virtual void call(Runtime* pRuntime, objectId self)
 	{
-		objectId scope = pRuntime->copy_object(self);
+		objectId scope = pRuntime->copy_object(pRuntime->getGlobalScope());
 		pRuntime->inc_ref(scope);
 		for (auto arg = signature.rbegin(); arg != signature.rend(); ++arg)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId(arg->c_str());
-			objectId argid = pRuntime->get_existing_object_or_allocate(scope, sid);
-			pRuntime->getObject(argid)->assign(pRuntime, pRuntime->getObject(pRuntime->stack_top()));
-			pRuntime->pop_object_from_stack();
+			pRuntime->assign_name_to_obj(scope, sid, pRuntime->soft_pop_and_deref_id_from_stack());
 		}
 		
 		if (self != -1)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId("self");
-			objectId argid = pRuntime->get_existing_object_or_allocate(scope, sid);
-			pRuntime->getObject(argid)->assign(pRuntime, pRuntime->getObject(self));
+			pRuntime->assign_name_to_obj(scope, sid, self);
 		}
 
 		pRuntime->push_frame();
@@ -1013,7 +1016,7 @@ public:
 			expression->execute(pRuntime, context);
 			if (!pRuntime->is_frame_stack_empty())
 			{
-				pRuntime->save_to_register(pRuntime->stack_top());
+				pRuntime->save_to_register(pRuntime->dereference(pRuntime->stack_top()));
 			}
 		}
 		pRuntime->set_unwinding(true);

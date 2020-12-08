@@ -33,7 +33,15 @@ enum class FairyObjectType
 	WrappedFunction,
 	FairyFunction,
 	Object,
+	Array,
+	Reference,
 	Class,
+};
+
+struct FairyReference
+{
+	objectId ownerTable;
+	stringId attributeKey;
 };
 
 union FairyValue
@@ -44,6 +52,7 @@ union FairyValue
 	WrappedFunction asWrappedFunction;
 	FuncASTN* asFairyFunction;
 	stringId asString;
+	FairyReference asReference;
 };
 
 class FairyObject
@@ -69,6 +78,11 @@ public:
 		m_value.asWrappedFunction = fn;
 		m_type = FairyObjectType::WrappedFunction;
 	}
+	FairyObject(const FairyReference& ref)
+	{
+		m_value.asReference = ref;
+		m_type = FairyObjectType::Reference;
+	}
 	FairyObject(FuncASTN* fn)
 	{
 		m_value.asFairyFunction = fn;
@@ -79,7 +93,11 @@ public:
 		m_value.asString = strId;
 		m_type = FairyObjectType::String;
 	}
-
+	FairyObject(FairyObjectType type)
+	{
+		m_value.asLong = 0;
+		m_type = type;
+	}
 	const FairyObject& operator=(const FairyObject& rhs)
 	{
 		this->m_type = rhs.m_type;
@@ -247,6 +265,11 @@ public:
 	{
 		assert(m_type == FairyObjectType::String);
 		return m_value.asString;
+	}
+	FairyReference& asReference()
+	{
+		assert(m_type == FairyObjectType::Reference);
+		return m_value.asReference;
 	}
 	FairyObjectType getType() { return m_type; }
 
