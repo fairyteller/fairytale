@@ -247,7 +247,6 @@ public:
 
 	std::vector < std::string> ParseFunctionSignature();
 
-	std::unique_ptr<ASTNode> ParsePrefixUnaryOperator();
 	std::unique_ptr<ASTNode> ParseFunctionDeclaration();
 	std::unique_ptr<ASTNode> ParseNumberExpr();
 
@@ -743,26 +742,6 @@ public:
 			LHS->execute(pRuntime, context);
 		if (RHS.get())
 			RHS->execute(pRuntime, context);
-		stringId sid = pRuntime->getStringTable().getStringId(Op);
-		objectId oid = pRuntime->get_existing_object_or_allocate(context, sid);
-		pRuntime->call(oid);
-	}
-};
-
-class PrefixOperatorExprASTN : public ASTNode {
-	std::string Op;
-	std::unique_ptr<ASTNode> RHS;
-
-public:
-	PrefixOperatorExprASTN(const std::string& op)
-		: Op(op+"pref") {}
-	void setRHS(std::unique_ptr<ASTNode> rhs)
-	{
-		RHS = std::move(rhs);
-	}
-	virtual void execute(Runtime* pRuntime, objectId context)
-	{
-		RHS->execute(pRuntime, context);
 		stringId sid = pRuntime->getStringTable().getStringId(Op);
 		objectId oid = pRuntime->get_existing_object_or_allocate(context, sid);
 		pRuntime->call(oid);

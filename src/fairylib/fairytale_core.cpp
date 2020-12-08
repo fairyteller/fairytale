@@ -275,10 +275,10 @@ Runtime::Runtime(FairytaleCore* pCore)
 	register_global_function("/", wrap<long long, long long, long long, __div__>());
 	register_global_function("%", wrap<long long, long long, long long, __mod__>());
 	register_global_function("+=", sum_compound);
-//	register_global_function("-=", sub_compound);
-//	register_global_function("*=", mul_compound);
-//	register_global_function("/=", div_compound);
-//	register_global_function("%=", mod_compound);
+	register_global_function("-=", sub_compound);
+	register_global_function("*=", mul_compound);
+	register_global_function("/=", div_compound);
+	register_global_function("%=", mod_compound);
 	register_global_function("==", __is_eq__);
 	register_global_function("!=", __is_neq__);
 	register_global_function("<", __less_than__);
