@@ -116,33 +116,20 @@ cat.print_name()
 imported_module.func_from_module()
 
 //sample "arrays"
-a = array(1, 2, 3, 4);
-print("a[0] is "+str(a.get(0)));
-print("a[1] is "+str(a.get(1)));
-print("a[2] is "+str(a.get(2)));
-print("a[3] is "+str(a.get(3)));
-b = array(a.unroll());
-print("b[0] is "+str(b.get(0)));
-print("b[1] is "+str(b.get(1)));
-print("b[2] is "+str(b.get(2)));
-print("b[3] is "+str(b.get(3)));
-c = array(a.unroll(), b.unroll());
-#c = [ a..., b... ]
-print("c[0] is "+str(c.get(0)));
-print("c[1] is "+str(c.get(1)));
-print("c[2] is "+str(c.get(2)));
-print("c[3] is "+str(c.get(3)));
-print("c[4] is "+str(c.get(4)));
-print("c[5] is "+str(c.get(5)));
-print("c[6] is "+str(c.get(6)));
-print("c[7] is "+str(c.get(7)));
-print("c.size() is "+str(c.size()));
-c.get(7) = 13;
-print("change...");
-print("c[7] is "+str(c.get(7)));
-print("c.size() is "+str(c.size()));
-d = c;
-d.get(6) = 42;
-print("d[5] is "+str(d.get(5)));
-print("d[6] is "+str(d.get(6)));
-print("c[6] is "+str(c.get(6)));
+print("Hello World")
+a = array();
+i = 0;
+while i < 10
+{
+	a = array(a.unroll(), i);
+	i += 1;
+}
+
+a = array(a.unroll(), a.unroll());
+
+k = 0;
+while k < 20
+{
+	print("a["+str(k)+"] == "+str(a[k]));
+	k += 1;
+}

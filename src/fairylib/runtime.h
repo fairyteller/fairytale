@@ -24,6 +24,7 @@ public:
 
 	void set_unwinding(bool value) { unwinding = value; }
 	bool is_unwinding() { return unwinding; }
+
 	template<class T>
 	objectId allocate(T value)
 	{
@@ -114,16 +115,11 @@ public:
 
 	ObjectRef safe_pop_and_dereference()
 	{
-		assert(stackFrames.top().objectStackTop < interpreterStack.size());
-		objectId id = interpreterStack.top();
-		interpreterStack.pop();
-		ObjectRef objectFromStack(this, id);
-		dec_ref(id);
+		ObjectRef objectFromStack = safe_pop();
 		return safe_dereference(objectFromStack);
 	}
 
-	// TODO: check if we have memory leak here
-	objectId soft_pop_from_stack()
+	objectId pop_from_stack_and_keep_reference()
 	{
 		assert(stackFrames.top().objectStackTop < interpreterStack.size());
 		objectId id = interpreterStack.top();
@@ -136,7 +132,7 @@ public:
 		return id;
 	}
 
-	objectId pop_from_stack()
+	void remove_top_from_stack()
 	{
 		assert(stackFrames.top().objectStackTop < interpreterStack.size());
 		objectId id = interpreterStack.top();
@@ -147,24 +143,11 @@ public:
 			std::cout << "\nSTACK PROFILE: pop " << id << std::endl;
 			printStack();
 		}
-		return id;
-	}
-
-
-
-	objectId pop_and_deref_id_from_stack()
-	{
-		return dereference(pop_from_stack());
-	}
-
-	FairyObject* pop_and_deref_object_from_stack()
-	{
-		return getObject(pop_and_deref_id_from_stack());
 	}
 
 	objectId soft_pop_and_deref_id_from_stack()
 	{
-		return dereference(soft_pop_from_stack());
+		return dereference(pop_from_stack_and_keep_reference());
 	}
 
 	FairyObject* soft_pop_and_deref_object_from_stack()
@@ -182,12 +165,8 @@ public:
 		auto& frame = stackFrames.top();
 		while (interpreterStack.size() > frame.objectStackTop)
 		{
-			pop_from_stack();
+			remove_top_from_stack();
 		}
-	}
-	FairyObject* pop_object_from_stack()
-	{
-		return getObject(pop_from_stack());
 	}
 
 	StringTable& getStringTable()
@@ -272,17 +251,6 @@ public:
 		std::cout << std::endl;
 	}
 
-	template<class T>
-	T pop()
-	{
-		static_assert("this type is not implemented");
-	}
-	template<>
-	long long pop<long long>()
-	{
-		return pop_and_deref_object_from_stack()->asLong();
-	}
-
 	void inc_ref(objectId id)
 	{
 		getObject(id)->refCount++;
@@ -332,7 +300,7 @@ public:
 		auto& frame = stackFrames.top();
 		while (interpreterStack.size() > frame.objectStackTop)
 		{
-			pop_from_stack();
+			remove_top_from_stack();
 		}
 		while (nameUsageStack.size() > frame.nameUsageStackTop)
 		{
@@ -363,6 +331,7 @@ public:
 	{
 		return regId;
 	}
+
 	objectId load_from_register()
 	{
 		objectId id = regId;

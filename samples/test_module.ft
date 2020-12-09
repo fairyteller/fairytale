@@ -1,14 +1,15 @@
-test_number = 0
 assert_eq = func(expression, expected_result)
 {
 	if (expression == expected_result)
 	{
-		print("Test "+str(test_number)+": Passed");
+		print("Test "+str(self.assert_eq.counter)+": Passed");
 	}
 	else
 	{
-		print("Test "+str(test_number)+": Failed!");
+		print("Test "+str(self.assert_eq.counter)+": Failed!");
 		print("	evaluated to "+str(expression)+", expected: "+str(expected_result));
 	}
-	test_number+=1;
+	self.assert_eq.counter+=1;
 }
+
+assert_eq.counter = 0;
