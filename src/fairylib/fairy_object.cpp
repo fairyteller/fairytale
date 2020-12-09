@@ -1,5 +1,6 @@
 #include "fairy_object.h"
 #include "fairytale_core.h"
+#include "abstract_syntax_tree.h"
 
 std::string FairyObject::describe()
 {

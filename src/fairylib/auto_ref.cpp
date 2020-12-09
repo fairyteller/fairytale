@@ -1,5 +1,6 @@
 #include "auto_ref.h"
 #include "fairytale_core.h"
+#include "abstract_syntax_tree.h"
 
 ObjectRef::ObjectRef(Runtime* pRuntime, objectId id)
 	: m_id(id)

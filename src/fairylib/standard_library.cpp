@@ -1,5 +1,6 @@
 #pragma once
 #include "standard_library.h"
+#include "abstract_syntax_tree.h"
 
 template<>
 long long script_cast<long long>(Runtime* pRuntime, objectId id)

@@ -1,6 +1,7 @@
 #pragma once
 #include "fairy_object.h"
 #include "auto_ref.h"
+#include "config.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -89,7 +90,7 @@ public:
 	{
 		interpreterStack.push(id);
 		inc_ref(id);
-		if (g_trace)
+		if (gTRACE)
 		{
 			std::cout << "\nSTACK PROFILE: push " << id << std::endl;
 			printStack();
@@ -127,7 +128,7 @@ public:
 		assert(stackFrames.top().objectStackTop < interpreterStack.size());
 		objectId id = interpreterStack.top();
 		interpreterStack.pop();
-		if (g_trace)
+		if (gTRACE)
 		{
 			std::cout << "\nSTACK PROFILE: soft pop " << id << std::endl;
 			printStack();
@@ -141,7 +142,7 @@ public:
 		objectId id = interpreterStack.top();
 		interpreterStack.pop();
 		dec_ref(id);
-		if (g_trace)
+		if (gTRACE)
 		{
 			std::cout << "\nSTACK PROFILE: pop " << id << std::endl;
 			printStack();

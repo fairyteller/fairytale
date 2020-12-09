@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "standard_library.h"
+#include "abstract_syntax_tree.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>

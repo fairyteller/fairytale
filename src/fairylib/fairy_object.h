@@ -17,9 +17,6 @@ class ASTNode;
 typedef size_t objectId;
 typedef void (*WrappedFunction)(Runtime*, objectId);
 
-
-extern bool g_trace;
-
 typedef std::unordered_map<stringId, objectId> FairyTable;
 
 enum class FairyObjectType
