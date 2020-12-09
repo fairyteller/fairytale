@@ -40,7 +40,7 @@ objectId FairyObject::getattr(Runtime* pRuntime, stringId key)
 		return iter->second;
 
 	//or there is no object referenced by this key, return empty
-	return pRuntime->allocate_empty();
+	return pRuntime->allocate(FairyObjectType::Unknown);
 }
 
 

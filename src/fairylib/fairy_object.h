@@ -35,6 +35,7 @@ enum class FairyObjectType
 	Array,
 	Reference,
 	Class,
+	Module,
 	Deleted
 };
 
@@ -271,6 +272,7 @@ public:
 		assert(m_type == FairyObjectType::Reference);
 		return m_value.asReference;
 	}
+
 	FairyObjectType getType() { return m_type; }
 
 	void release(Runtime* pRuntime);

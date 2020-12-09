@@ -8,8 +8,9 @@
 Runtime::Runtime(FairytaleCore* pCore)
 	: m_core(pCore)
 	, globalScopeObject(-1)
+	, direct_memory_usage_semaphore(0)
 {
-	globalScopeObject = allocate_empty();
+	globalScopeObject = allocate(FairyObjectType::Module);
 	inc_ref(globalScopeObject);
 	register_global_function("pow", pow_wrapper);
 	register_global_function("+", sum_wrapper);

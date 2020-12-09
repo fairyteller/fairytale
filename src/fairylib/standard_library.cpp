@@ -1,6 +1,12 @@
 #pragma once
 #include "standard_library.h"
 
+template<>
+long long script_cast<long long>(Runtime* pRuntime, objectId id)
+{
+	return pRuntime->getObject(id)->asLong();
+}
+
 long long sum(long long a, long long b)
 {
 	return a + b;
@@ -8,22 +14,20 @@ long long sum(long long a, long long b)
 
 void sum_wrapper(Runtime* pRuntime, objectId context)
 {
-	FairyObject* b = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* a = pRuntime->pop_and_deref_object_from_stack();
+	ObjectRef b = pRuntime->safe_pop_and_dereference();
+	ObjectRef a = pRuntime->safe_pop_and_dereference();
 	assert(b->getType() == a->getType());
 	if (a->getType() == FairyObjectType::Int)
 	{
 		long long summed = a->asLong() + b->asLong();
-		objectId result = pRuntime->allocate(summed);
-		pRuntime->push_on_stack(result);
+		pRuntime->allocate_on_stack(summed);
 	}
 	else if (a->getType() == FairyObjectType::String)
 	{
 
 		std::string summed{ pRuntime->getStringTable().getString(a->asString()) };
 		summed += pRuntime->getStringTable().getString(b->asString());
-		objectId result = pRuntime->allocate(pRuntime->getStringTable().getStringId(summed.c_str()));
-		pRuntime->push_on_stack(result);
+		pRuntime->allocate_on_stack(pRuntime->getStringTable().getStringId(summed.c_str()));
 	}
 }
 
@@ -34,10 +38,9 @@ long long sub(long long a, long long b)
 
 void sub_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	long long a = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	objectId result = pRuntime->allocate(sub(a, b));
-	pRuntime->push_on_stack(result);
+	long long b = pRuntime->safe_pop_and_dereference()->asLong();
+	long long a = pRuntime->safe_pop_and_dereference()->asLong();
+	pRuntime->allocate_on_stack(sub(a,b));
 }
 
 long long mul(long long a, long long b)
@@ -47,10 +50,9 @@ long long mul(long long a, long long b)
 
 void mul_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	long long a = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	objectId result = pRuntime->allocate(mul(a, b));
-	pRuntime->push_on_stack(result);
+	long long b = pRuntime->safe_pop_and_dereference()->asLong();
+	long long a = pRuntime->safe_pop_and_dereference()->asLong();
+	pRuntime->allocate_on_stack(mul(a, b));
 }
 
 long long __div__(long long a, long long b)
@@ -65,10 +67,9 @@ long long __mod__(long long a, long long b)
 
 void div_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	long long a = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	objectId result = pRuntime->allocate(__div__(a, b));
-	pRuntime->push_on_stack(result);
+	long long b = pRuntime->safe_pop_and_dereference()->asLong();
+	long long a = pRuntime->safe_pop_and_dereference()->asLong();
+	pRuntime->allocate_on_stack(__div__(a, b));
 }
 
 long long pow(long long a, long long b)
@@ -83,10 +84,9 @@ long long pow(long long a, long long b)
 
 void pow_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	long long a = pRuntime->pop_and_deref_object_from_stack()->asLong();
-	objectId result = pRuntime->allocate(pow(a, b));
-	pRuntime->push_on_stack(result);
+	long long b = pRuntime->safe_pop_and_dereference()->asLong();
+	long long a = pRuntime->safe_pop_and_dereference()->asLong();
+	pRuntime->allocate_on_stack(pow(a, b));
 }
 
 void assign(Runtime* pRuntime, objectId context)
@@ -257,7 +257,7 @@ void __more_eq_than__(Runtime* pRuntime, objectId context)
 
 void __minus_prefix__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
 	objectId result = pRuntime->allocate(-rhs->asLong());
 	pRuntime->push_on_stack(result);
 }

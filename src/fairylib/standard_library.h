@@ -5,18 +5,24 @@
 #include <stdio.h>
 #include <string>
 
+template<typename T>
+T script_cast(Runtime* pRuntime, objectId id);
+
+template<>
+long long script_cast<long long>(Runtime* pRuntime, objectId id);
+
 template<class Ret, class A0, class A1, typename F, F func>
 void smart_wrapper(Runtime* pRuntime, objectId context)
 {
-	auto b = pRuntime->pop<A1>();
-	auto a = pRuntime->pop<A0>();
+	auto b = script_cast<A1>(pRuntime, pRuntime->safe_pop_and_dereference().id());
+	auto a = script_cast<A0>(pRuntime, pRuntime->safe_pop_and_dereference().id());
 	pRuntime->push_on_stack(pRuntime->allocate(func(a, b)));
 }
 
 template<class Ret, class A0, typename F, F func>
 void smart_wrapper(Runtime* pRuntime, objectId context)
 {
-	auto a = pRuntime->pop<A0>();
+	auto a = script_cast<A0>(pRuntime, pRuntime->safe_pop_and_dereference().id());
 	pRuntime->push_on_stack(pRuntime->allocate(func(a)));
 }
 

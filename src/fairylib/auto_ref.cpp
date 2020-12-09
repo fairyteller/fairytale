@@ -51,9 +51,9 @@ ObjectRef::~ObjectRef()
 		pRuntime->dec_ref(m_id);
 }
 
-FairyObject& ObjectRef::operator->()
+FairyObject* ObjectRef::operator->()  const
 {
-	return *(pRuntime->getObject(m_id));
+	return pRuntime->getObject(m_id);
 }
 
 void ObjectRef::reset(objectId id)

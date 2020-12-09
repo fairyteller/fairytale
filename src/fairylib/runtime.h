@@ -1,5 +1,6 @@
 #pragma once
 #include "fairy_object.h"
+#include "auto_ref.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -25,6 +26,7 @@ public:
 	template<class T>
 	objectId allocate(T value)
 	{
+		assert(direct_memory_usage_semaphore == 0);
 		if (freeIds.size())
 		{
 			objectId freeId = freeIds.top();
@@ -39,25 +41,15 @@ public:
 		}
 	}
 
-	objectId allocate_empty()
+	template<class T>
+	void allocate_on_stack(T value)
 	{
-		if (freeIds.size())
-		{
-			objectId freeId = freeIds.top();
-			allocatedObjects[freeId] = FairyObject();
-			freeIds.pop();
-			return freeId;
-		}
-		else
-		{
-			allocatedObjects.push_back(FairyObject());
-			return allocatedObjects.size() - 1;
-		}
+		push_on_stack(allocate(value));
 	}
 
 	objectId copy_object(objectId original)
 	{
-		objectId newCopyId = allocate_empty();
+		objectId newCopyId = allocate(FairyObjectType::Unknown);
 		FairyObject* originalObj = getObject(original);
 		FairyObject* newCopyObj = getObject(newCopyId);
 		*newCopyObj = *originalObj;
@@ -122,6 +114,25 @@ public:
 		return &(allocatedObjects[id]);
 	}
 
+	ObjectRef safe_pop()
+	{
+		assert(stackFrames.top().objectStackTop < interpreterStack.size());
+		objectId id = interpreterStack.top();
+		interpreterStack.pop();
+		ObjectRef result(this, id);
+		dec_ref(id);
+		return result;
+	}
+
+	ObjectRef safe_pop_and_dereference()
+	{
+		assert(stackFrames.top().objectStackTop < interpreterStack.size());
+		objectId id = interpreterStack.top();
+		interpreterStack.pop();
+		ObjectRef objectFromStack(this, id);
+		dec_ref(id);
+		return safe_dereference(objectFromStack);
+	}
 
 	// TODO: check if we have memory leak here
 	objectId soft_pop_from_stack()
@@ -204,7 +215,7 @@ public:
 			iter = getObject(globalScopeObject)->get_table().find(strId);
 			if (iter == getObject(globalScopeObject)->get_table().end())
 			{
-				objectId id = allocate_empty();
+				objectId id = allocate(FairyObjectType::Unknown);
 				assign_name_to_obj(parentTable, strId, id);
 				return id;
 			}
@@ -228,6 +239,16 @@ public:
 			result = getObject(pObj->asReference().ownerTable)->getattr(this, pObj->asReference().attributeKey);
 		}
 		inc_ref(result); // maybe leak
+		return result;
+	}
+
+	ObjectRef safe_dereference(const ObjectRef& objectRef)
+	{
+		ObjectRef result = objectRef;
+		if (objectRef->getType() == FairyObjectType::Reference)
+		{
+			result.reset(getObject(objectRef->asReference().ownerTable)->getattr(this, objectRef->asReference().attributeKey));
+		}
 		return result;
 	}
 
@@ -371,6 +392,7 @@ private:
 		size_t objectStackTop;
 		size_t nameUsageStackTop;
 	};
+	size_t direct_memory_usage_semaphore;
 	StringTable m_stringTable;
 	std::vector<FairyObject> allocatedObjects;
 	std::stack<objectId> freeIds;
