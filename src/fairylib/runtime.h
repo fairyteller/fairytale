@@ -85,19 +85,6 @@ public:
 		getObject(parentTable)->setattr(this, sid, od);
 	}
 
-	//	void unbind_name(stringId strId)
-	//	{
-	//		dec_ref(getObject(globalScopeObject)->get_table()[strId]);
-	//		getObject(globalScopeObject)->get_table().erase(strId);
-	//	}
-
-	template<class T>
-	void put_literal_on_stack(T value)
-	{
-		objectId id = allocate(value);
-		push_on_stack(id);
-	}
-
 	void push_on_stack(objectId id)
 	{
 		interpreterStack.push(id);
@@ -209,6 +196,7 @@ public:
 
 	objectId get_existing_object_or_allocate(objectId parentTable, stringId strId)
 	{
+		// TODO: fix two tables lookup and merge tables into one "localScope" table
 		auto iter = getObject(parentTable)->get_table().find(strId);
 		if (iter == getObject(parentTable)->get_table().end())
 		{
@@ -386,13 +374,15 @@ public:
 	{
 		return globalScopeObject;
 	}
+
+	size_t direct_memory_usage_semaphore;
 private:
 	struct StackFrame
 	{
 		size_t objectStackTop;
 		size_t nameUsageStackTop;
 	};
-	size_t direct_memory_usage_semaphore;
+
 	StringTable m_stringTable;
 	std::vector<FairyObject> allocatedObjects;
 	std::stack<objectId> freeIds;

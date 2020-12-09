@@ -91,15 +91,12 @@ void pow_wrapper(Runtime* pRuntime, objectId context)
 
 void assign(Runtime* pRuntime, objectId context)
 {
-	objectId rhsId = pRuntime->soft_pop_from_stack();
-	objectId rhsValue = pRuntime->dereference(rhsId);
-	objectId lhsId = pRuntime->soft_pop_from_stack();
-	FairyObject* lhs = pRuntime->getObject(lhsId);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop();
+	ObjectRef lhsDeref = pRuntime->safe_dereference(lhs);
 	assert(lhs->getType() == FairyObjectType::Reference);
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, rhsValue);
-	pRuntime->push_on_stack(lhsId);
-	pRuntime->dec_ref(rhsId);
-	pRuntime->dec_ref(lhsId);
+	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, rhs.id());
+	pRuntime->push_on_stack(lhs.id());
 }
 
 void sum_compound(Runtime* pRuntime, objectId context)
@@ -209,65 +206,57 @@ void mod_compound(Runtime* pRuntime, objectId context)
 
 void __is_eq__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* lhs = pRuntime->pop_and_deref_object_from_stack();
-	objectId result = pRuntime->allocate(*lhs == *rhs);
-	pRuntime->push_on_stack(result);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(*lhs == *rhs);
 }
 
 void __is_neq__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* lhs = pRuntime->pop_and_deref_object_from_stack();
-	objectId result = pRuntime->allocate(*lhs != *rhs);
-	pRuntime->push_on_stack(result);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(*lhs != *rhs);
 }
 
 void __less_than__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* lhs = pRuntime->pop_and_deref_object_from_stack();
-	objectId result = pRuntime->allocate(*lhs < *rhs);
-	pRuntime->push_on_stack(result);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(*lhs < *rhs);
 }
 
 void __more_than__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* lhs = pRuntime->pop_and_deref_object_from_stack();
-	objectId result = pRuntime->allocate(*lhs > *rhs);
-	pRuntime->push_on_stack(result);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(*lhs > *rhs);
 }
 
 void __less_eq_than__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* lhs = pRuntime->pop_and_deref_object_from_stack();
-	objectId result = pRuntime->allocate(*lhs <= *rhs);
-	pRuntime->push_on_stack(result);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(*lhs <= *rhs);
 }
 
 void __more_eq_than__(Runtime* pRuntime, objectId context)
 {
-	FairyObject* rhs = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* lhs = pRuntime->pop_and_deref_object_from_stack();
-	objectId result = pRuntime->allocate(*lhs >= *rhs);
-	pRuntime->push_on_stack(result);
+	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
+	ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(*lhs >= *rhs);
 }
 
 void __minus_prefix__(Runtime* pRuntime, objectId context)
 {
-	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
-	objectId result = pRuntime->allocate(-rhs->asLong());
-	pRuntime->push_on_stack(result);
+	ObjectRef arg = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(-arg->asLong());
 }
 
 void print_wrapper(Runtime* pRuntime, objectId context)
 {
-	objectId argId = pRuntime->soft_pop_and_deref_id_from_stack();
-	stringId a = pRuntime->getObject(argId)->toStringId(pRuntime);
+	ObjectRef arg = pRuntime->safe_pop_and_dereference();
+	stringId a = arg->toStringId(pRuntime);
 	printf("%s\n", pRuntime->getStringTable().getString(a));
-	pRuntime->dec_ref(argId);
 }
 
 char* input()
@@ -282,7 +271,7 @@ char* input()
 void input_wrapper(Runtime* pRuntime, objectId context)
 {
 	stringId sid = pRuntime->getStringTable().getStringId(input());
-	pRuntime->push_on_stack(pRuntime->allocate(sid));
+	pRuntime->allocate_on_stack(sid);
 }
 
 void trace(Runtime* pRuntime, objectId context)
@@ -302,130 +291,111 @@ void print_stack(Runtime* pRuntime, objectId context)
 
 void int_wrapper(Runtime* pRuntime, objectId context)
 {
-	objectId id = pRuntime->soft_pop_and_deref_id_from_stack();
-	FairyObject* pObj = pRuntime->getObject(id);
-	pRuntime->push_on_stack(pRuntime->allocate(pObj->toLong(pRuntime)));
-	pRuntime->dec_ref(id);
+	ObjectRef arg = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(arg->toLong(pRuntime));
 }
 
 void str_wrapper(Runtime* pRuntime, objectId context)
 {
-	objectId id = pRuntime->soft_pop_and_deref_id_from_stack();
-	FairyObject* pObj = pRuntime->getObject(id);
-	pRuntime->push_on_stack(pRuntime->allocate(pObj->toStringId(pRuntime)));
-	pRuntime->dec_ref(id);
+	ObjectRef arg = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(arg->toStringId(pRuntime));
 }
 
 void bool_wrapper(Runtime* pRuntime, objectId context)
 {
-	objectId id = pRuntime->soft_pop_and_deref_id_from_stack();
-	FairyObject* pObj = pRuntime->getObject(id);
-	pRuntime->push_on_stack(pRuntime->allocate(pObj->toBool(pRuntime)));
-	pRuntime->dec_ref(id);
+	ObjectRef arg = pRuntime->safe_pop_and_dereference();
+	pRuntime->allocate_on_stack(arg->toBool(pRuntime));
 }
 
 void import_module(Runtime* pRuntime, objectId context)
 {
-	objectId id = pRuntime->soft_pop_and_deref_id_from_stack();
-	FairyObject* pObj = pRuntime->getObject(id);
-	std::string filename = pObj->toString(pRuntime);
+	ObjectRef module_name = pRuntime->safe_pop_and_dereference();
+	std::string filename = module_name->toString(pRuntime);
 	pRuntime->import_module(filename, -1);
-	pRuntime->dec_ref(id);
 }
 
 // attrobj = getattr(obj, "key")
 void getattr(Runtime* pRuntime, objectId context)
 {
-	FairyObject* pKey = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* pTable = pRuntime->pop_and_deref_object_from_stack();
-	pRuntime->push_on_stack(pTable->getattr(pRuntime, pKey->asString()));
+	ObjectRef key = pRuntime->safe_pop_and_dereference();
+	ObjectRef table = pRuntime->safe_pop_and_dereference();
+	pRuntime->push_on_stack(table->getattr(pRuntime, key->asString()));
 }
-
 
 // setattr(obj, "key", value)
 void setattr(Runtime* pRuntime, objectId context)
 {
-	objectId value = pRuntime->pop_and_deref_id_from_stack();
-	FairyObject* pKey = pRuntime->pop_and_deref_object_from_stack();
-	FairyObject* pTable = pRuntime->pop_and_deref_object_from_stack();
-	pTable->setattr(pRuntime, pKey->asString(), value);
+	ObjectRef value = pRuntime->safe_pop_and_dereference();
+	ObjectRef key = pRuntime->safe_pop_and_dereference();
+	ObjectRef table = pRuntime->safe_pop_and_dereference();
+	table->setattr(pRuntime, key->asString(), value.id());
 }
-
 
 // size = arr.size()
 void array_size(Runtime* pRuntime, objectId context)
 {
-	FairyObject* thisObj = pRuntime->getObject(context);
-	pRuntime->push_on_stack(thisObj->getattr(pRuntime, pRuntime->getStringTable().getStringId("__size")));
+	ObjectRef self(pRuntime, context);
+	pRuntime->push_on_stack(self->getattr(pRuntime, pRuntime->getStringTable().getStringId("__size")));
 }
 
 // size = arr.unroll()
 void array_unroll(Runtime* pRuntime, objectId context)
 {
-	FairyObject* thisObj = pRuntime->getObject(context);
-	objectId sizeObjId = thisObj->getattr(pRuntime, pRuntime->getStringTable().getStringId("__size"));
-	FairyObject* sizeObj = pRuntime->getObject(sizeObjId);
+	ObjectRef self(pRuntime, context);
+	ObjectRef sizeObj(pRuntime, self->getattr(pRuntime, pRuntime->getStringTable().getStringId("__size")));
 	long long size = sizeObj->asLong();
 	for (int i = 0; i < size; ++i)
 	{
-		pRuntime->push_on_stack(thisObj->getattr(pRuntime, pRuntime->getStringTable().getStringId(i)));
+		pRuntime->push_on_stack(self->getattr(pRuntime, pRuntime->getStringTable().getStringId(i)));
 	}
 }
 
 void array_get(Runtime* pRuntime, objectId context)
 {
-	FairyObject* thisObj = pRuntime->getObject(context);
-	objectId arg = pRuntime->pop_from_stack();
-	FairyObject* indexObj = pRuntime->getObject(arg);
-	long long index = indexObj->asLong();
-	pRuntime->push_on_stack(thisObj->getattr(pRuntime, pRuntime->getStringTable().getStringId(index)));
+	ObjectRef self(pRuntime, context);
+	ObjectRef key = pRuntime->safe_pop_and_dereference();
+	long long index = key->asLong();
+	pRuntime->push_on_stack(self->getattr(pRuntime, pRuntime->getStringTable().getStringId(index)));
 }
 
 void array_index(Runtime* pRuntime, objectId context)
 {
-	objectId argId = pRuntime->soft_pop_and_deref_id_from_stack();
-	FairyObject* indexObj = pRuntime->getObject(argId);
+	ObjectRef indexObj = pRuntime->safe_pop_and_dereference();
 	long long index = indexObj->asLong();
-	pRuntime->push_on_stack(pRuntime->allocate(FairyReference{ context, pRuntime->getStringTable().getStringId(index) }));
+	pRuntime->allocate_on_stack(FairyReference{ context, pRuntime->getStringTable().getStringId(index) });
 	pRuntime->inc_ref(context);
-	pRuntime->dec_ref(argId);
 }
 
 // obj = array(arg0, arg1, arg2, ..., argn);
 void array(Runtime* pRuntime, objectId context)
 {
-	objectId newObjId = pRuntime->allocate(FairyObjectType::Array);
-	pRuntime->inc_ref(newObjId);
-	FairyObject* pObj = pRuntime->getObject(newObjId);
+	ObjectRef newArray(pRuntime, pRuntime->allocate(FairyObjectType::Array));
 	assert(pRuntime->get_amount_of_objects_in_stack_frame() > 0);
 	int amountOfArguments = pRuntime->get_amount_of_objects_in_stack_frame() - 1; //we do not want to pull "self" object
 	int remainingObjects = amountOfArguments;
 	while (remainingObjects)
 	{
 
-		objectId arg = pRuntime->soft_pop_from_stack();
+		ObjectRef arg = pRuntime->safe_pop_and_dereference();
 		--remainingObjects;
 		stringId sid = pRuntime->getStringTable().getStringId(remainingObjects); // index is equal to amount of objects-1
-		pObj->setattr(pRuntime, sid, arg);
-		pRuntime->dec_ref(arg);
+		newArray->setattr(pRuntime, sid, arg.id());
 	}
 	objectId __sizeObjId = pRuntime->allocate((long long)amountOfArguments);
-	pRuntime->getObject(newObjId)->setattr(pRuntime, pRuntime->getStringTable().getStringId("__size"), __sizeObjId);
+	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("__size"), __sizeObjId);
 	objectId sizeObjId = pRuntime->allocate(array_size);
-	pRuntime->getObject(newObjId)->setattr(pRuntime, pRuntime->getStringTable().getStringId("size"), sizeObjId);
+	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("size"), sizeObjId);
 	objectId getObjId = pRuntime->allocate(array_get);
-	pRuntime->getObject(newObjId)->setattr(pRuntime, pRuntime->getStringTable().getStringId("get"), getObjId);
+	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("get"), getObjId);
 	objectId index = pRuntime->allocate(array_index);
-	pRuntime->getObject(newObjId)->setattr(pRuntime, pRuntime->getStringTable().getStringId("__index__"), index);
-	//	pObj->setattr(pRuntime, pRuntime->getStringTable().getStringId("set"), pRuntime->allocate(array_set));
+	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("__index__"), index);
 	objectId unrollObjId = pRuntime->allocate(array_unroll);
-	pRuntime->getObject(newObjId)->setattr(pRuntime, pRuntime->getStringTable().getStringId("unroll"), unrollObjId);
+	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("unroll"), unrollObjId);
 
-	pRuntime->push_on_stack(newObjId);
-	pRuntime->dec_ref(newObjId);
+	pRuntime->push_on_stack(newArray.id());
 }
 
 void object(Runtime* pRuntime, objectId context)
 {
-	pRuntime->push_on_stack(pRuntime->allocate(FairyObjectType::Object));
+	pRuntime->allocate_on_stack(FairyObjectType::Object);
 }

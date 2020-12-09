@@ -2,6 +2,7 @@
 #include "parsing.h"
 #include "fairy_object.h"
 #include "runtime.h"
+#include "rules.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -14,207 +15,6 @@
 #include <assert.h>
 #include <sstream>
 
-struct Rules
-{
-	RangeBasedFilter spacesAndTabs;
-	RangeBasedFilter digit;
-	RangeBasedFilter brace;
-	RangeBasedFilter squareBrace;
-	RangeBasedFilter operatorSymbols;
-	RangeBasedFilter openParenthesis;
-	RangeBasedFilter englishLetters;
-	RangeBasedFilter parenthesis;
-	RangeBasedFilter validIdentifierFirstSymbol;
-	RangeBasedFilter validIdentifierSymbol;
-	RangeBasedFilter expressionEnd;
-	RangeBasedFilter quote;
-	RangeBasedFilter stringContentSymbol;
-	RangeBasedFilter numberSign;
-	RangeBasedFilter commentContentSymbol;
-	RangeBasedFilter commentEnd;
-
-	TokenRules numberRule;
-	TokenRules braceRule;
-	TokenRules operatorRule;
-	TokenRules identifierRule;
-	TokenRules parenthesisRule;
-	TokenRules expressionEndRule;
-	TokenRules stringLiteralRule;
-	TokenRules commentRule;
-	TokenRules squareBracetRule;
-
-	std::map<std::string, int> binaryOperatorPrecedence;
-
-	int GetOperatorPrecedence(const std::string& requestedOperator) {
-		int TokPrec = binaryOperatorPrecedence[requestedOperator];
-		if (TokPrec <= 0) return -1;
-		return TokPrec;
-	}
-
-	static Token createNumberToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		token.type = TokenType::Number;
-		token.content = input.substr(startIndex, endIndex - startIndex);
-		return token;
-	}
-
-	static Token createParenthesisToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		if (input[startIndex] == '(')
-			token.type = TokenType::OpenParenthesis;
-		if (input[startIndex] == ')')
-			token.type = TokenType::ClosedParenthesis;
-		if (input[startIndex] == ',')
-			token.type = TokenType::Comma;
-		token.content = input[startIndex];
-		return token;
-	}
-
-	static Token createBraceToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		if (input[startIndex] == '{')
-			token.type = TokenType::OpenBrace;
-		if (input[startIndex] == '}')
-			token.type = TokenType::ClosedBrace;
-		token.content = input[startIndex];
-		return token;
-	}
-
-	static Token createSquareBraceToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		if (input[startIndex] == '[')
-			token.type = TokenType::OpenSquareBrace;
-		if (input[startIndex] == ']')
-			token.type = TokenType::ClosedSquareBrace;
-		token.content = input[startIndex];
-		return token;
-	}
-	static Token createOperatorToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		token.type = TokenType::BinaryOperator;
-		token.content = input.substr(startIndex, endIndex - startIndex);
-		return token;
-	}
-
-	static Token createIdentifierToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		token.content = input.substr(startIndex, endIndex - startIndex);
-		auto assumedKeyword = input.substr(startIndex, endIndex - startIndex);
-		if (assumedKeyword == "true" || assumedKeyword == "false")
-		{
-			token.type = TokenType::BooleanLiteral;
-		}
-		else if (assumedKeyword == "if")
-		{
-			token.type = TokenType::If;
-		}
-		else if (assumedKeyword == "else")
-		{
-			token.type = TokenType::Else;
-		}
-		else if (assumedKeyword == "while")
-		{
-			token.type = TokenType::While;
-		}
-		else if (assumedKeyword == "func")
-		{
-			token.type = TokenType::Func;
-		}
-		else if (assumedKeyword == "return")
-		{
-			token.type = TokenType::Return;
-		}
-//		else if (assumedKeyword == "import")
-//		{
-//			token.type = TokenType::Import;
-//		}
-		
-		else
-		{
-			token.type = TokenType::Identifier;
-		}
-		return token;
-	}
-
-	static Token createStringLiteralToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		token.type = TokenType::String;
-		token.content = input.substr(startIndex+1, endIndex - startIndex - 2);
-		return token;
-
-	}
-
-	static Token createExpressionEndToken(const std::string& input, size_t startIndex, size_t endIndex)
-	{
-		Token token;
-		token.type = TokenType::ExpressionEnd;
-		token.content = input.substr(startIndex, endIndex - startIndex);
-		return token;
-	}
-
-	size_t skipIndents(const std::string& input, size_t startIndex)
-	{
-		return readWhileFiltered(input, startIndex, spacesAndTabs);
-	}
-
-	Rules()
-	{
-		spacesAndTabs.set('\t').unite(' ');
-		digit.set({ '0' , '9' });
-		operatorSymbols.set('+').unite('-').unite('*').unite('/').unite('=').unite('>').unite('<').unite('&').unite('|').unite('!').unite('%').unite('.').unite('@');
-		parenthesis.set('(').unite(')').unite(',');
-		brace.set('{').unite('}');
-		squareBrace.set('[').unite(']');
-		englishLetters.set({ 'A','Z' }).unite({ 'a', 'z' });
-		validIdentifierFirstSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_');
-		validIdentifierSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_').unite({ '0','9' });
-		expressionEnd.set('\n').unite(';').unite('\0');
-		commentEnd.set('\n').unite('\0');
-		quote.set('\"');
-		numberSign.set('#');
-		stringContentSymbol.set({ 1, '\"'-1 }).unite({'\"'+1, 126});
-		commentContentSymbol.set({ 1, '\n' - 1 }).unite({ '\n' + 1, 126 });
-		
-		numberRule.setFactory(createNumberToken) << SymbolSequence{1, UINT32_MAX, digit };
-		operatorRule.setFactory(createOperatorToken) << SymbolSequence{ 1, 2, operatorSymbols };
-		identifierRule.setFactory(createIdentifierToken) << SymbolSequence{ 1, 1, validIdentifierFirstSymbol } << SymbolSequence{ 0, UINT32_MAX, validIdentifierSymbol };
-		parenthesisRule.setFactory(createParenthesisToken) << SymbolSequence{ 1, 1, parenthesis };
-		braceRule.setFactory(createBraceToken) << SymbolSequence{ 1, 1, brace };
-		squareBracetRule.setFactory(createSquareBraceToken) << SymbolSequence{ 1, 1, squareBrace };
-		expressionEndRule.setFactory(createExpressionEndToken) << SymbolSequence{ 1, 1, expressionEnd };
-		stringLiteralRule.setFactory(createStringLiteralToken) << SymbolSequence{ 1, 1, quote} << SymbolSequence{0, UINT32_MAX, stringContentSymbol } << SymbolSequence{1, 1, quote};
-		commentRule.setFactory(nullptr) << SymbolSequence{ 1, 1, numberSign } << SymbolSequence{ 0, UINT32_MAX, commentContentSymbol } << SymbolSequence{ 1, 1, commentEnd };
-
-		binaryOperatorPrecedence["="] = 5;
-		binaryOperatorPrecedence["+="] = 5;
-		binaryOperatorPrecedence["-="] = 5;
-		binaryOperatorPrecedence["*="] = 5;
-		binaryOperatorPrecedence["%="] = 5;
-		binaryOperatorPrecedence["/="] = 5;
-		binaryOperatorPrecedence["=="] = 9;
-		binaryOperatorPrecedence["!="] = 9;
-		binaryOperatorPrecedence[">="] = 10;
-		binaryOperatorPrecedence["<="] = 10;
-		binaryOperatorPrecedence[">"] = 10;
-		binaryOperatorPrecedence["<"] = 10;
-		binaryOperatorPrecedence["+"] = 20;
-		binaryOperatorPrecedence["-"] = 20;
-		binaryOperatorPrecedence["*"] = 40;
-		binaryOperatorPrecedence["%"] = 40;
-		binaryOperatorPrecedence["/"] = 40;
-		binaryOperatorPrecedence["-prefix"] = 45;
-		binaryOperatorPrecedence["("] = 48;
-		binaryOperatorPrecedence["["] = 48;
-		binaryOperatorPrecedence["."] = 50;
-	}
-};
 
 class BytecodeItem {
 
@@ -298,7 +98,7 @@ public:
 	}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		pRuntime->put_literal_on_stack(m_value);
+		pRuntime->allocate_on_stack(m_value);
 	}
 };
 
@@ -309,7 +109,7 @@ public:
 	BooleanASTN(bool value) : m_value(value) {}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		pRuntime->put_literal_on_stack(m_value);
+		pRuntime->allocate_on_stack(m_value);
 	}
 };
 
@@ -321,7 +121,7 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		stringId strId = pRuntime->getStringTable().getStringId(stringValue.c_str());
-		pRuntime->put_literal_on_stack<stringId>(strId);
+		pRuntime->allocate_on_stack<stringId>(strId);
 	}
 };
 
@@ -333,7 +133,8 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		stringId id = pRuntime->getStringTable().getStringId(Name);
-		pRuntime->push_on_stack(pRuntime->allocate(FairyReference{ context, id }));
+		pRuntime->allocate_on_stack(FairyReference{ context, id });
+		// TODO: fix this manual ref increment, it can cause memory leak
 		pRuntime->inc_ref(context);
 	}
 };
@@ -369,10 +170,8 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		LHS->execute(pRuntime, context);
-		objectId oid = pRuntime->soft_pop_from_stack();
-		objectId dereferencedId = pRuntime->dereference(oid);
-		RHS->execute(pRuntime, dereferencedId);
-		pRuntime->dec_ref(oid);
+		ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+		RHS->execute(pRuntime, lhs.id());
 	}
 };
 
@@ -387,24 +186,21 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context)
 	{
 		Callee->execute(pRuntime, context);
-		objectId calleeId = pRuntime->soft_pop_from_stack();
-		objectId derefCalleeId = pRuntime->dereference(calleeId);
+		ObjectRef callee = pRuntime->safe_pop();
 
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
 		}
-		FairyObject* pObj = pRuntime->getObject(calleeId);
-		if (pObj->getType() == FairyObjectType::Reference)
+		if (callee->getType() == FairyObjectType::Reference)
 		{
-			pRuntime->call(derefCalleeId, pObj->asReference().ownerTable);
+			ObjectRef dereferencedCallee = pRuntime->safe_dereference(callee);
+			pRuntime->call(dereferencedCallee.id(), callee->asReference().ownerTable);
 		}
 		else
 		{
-			pRuntime->call(derefCalleeId, context);
+			pRuntime->call(callee.id(), context);
 		}
-		pRuntime->dec_ref(calleeId);
-		pRuntime->dec_ref(derefCalleeId);
 	}
 };
 
@@ -420,15 +216,14 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		Collection->execute(pRuntime, context);
-		objectId collectionId = pRuntime->soft_pop_and_deref_id_from_stack();
+		ObjectRef collection = pRuntime->safe_pop_and_dereference();
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
 		}
 		stringId indexMethodSID = pRuntime->getStringTable().getStringId("__index__");
-		objectId indexMethod = pRuntime->getObject(collectionId)->getattr(pRuntime, indexMethodSID);
-		pRuntime->call(indexMethod, collectionId);
-		pRuntime->dec_ref(collectionId);
+		objectId indexMethod = collection->getattr(pRuntime, indexMethodSID);
+		pRuntime->call(indexMethod, collection.id());
 	}
 };
 
@@ -442,11 +237,9 @@ public:
 	}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		objectId module_scope = pRuntime->getGlobalScope();
-		pRuntime->inc_ref(module_scope);
-		body->execute(pRuntime, module_scope);
-		pRuntime->push_on_stack(module_scope);
-		pRuntime->dec_ref(module_scope);
+		ObjectRef module_scope(pRuntime, pRuntime->getGlobalScope());
+		body->execute(pRuntime, module_scope.id());
+		pRuntime->push_on_stack(module_scope.id());
 	}
 };
 
@@ -495,8 +288,8 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		condition->execute(pRuntime, context);
-		FairyObject* pObj = pRuntime->pop_object_from_stack();
-		if (pObj->asBool() == true)
+		ObjectRef conditionResult = pRuntime->safe_pop_and_dereference();
+		if (conditionResult->asBool() == true)
 		{
 			trueBlock->execute(pRuntime, context);
 		}
@@ -526,8 +319,8 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		condition->execute(pRuntime, context);
-		FairyObject* pObj = pRuntime->pop_object_from_stack();
-		while (pObj->asBool() == true)
+		ObjectRef conditionResult = pRuntime->safe_pop_and_dereference();
+		while (conditionResult->asBool() == true)
 		{
 			innerBlock->execute(pRuntime, context);
 			condition->execute(pRuntime, context);
@@ -535,7 +328,7 @@ public:
 			{
 				break;
 			}
-			pObj = pRuntime->pop_object_from_stack();
+			conditionResult = pRuntime->safe_pop_and_dereference();
 		}
 	}
 };
@@ -556,25 +349,24 @@ public:
 	}
 	virtual void call(Runtime* pRuntime, objectId self)
 	{
-		objectId scope = pRuntime->copy_object(pRuntime->getGlobalScope());
-		pRuntime->inc_ref(scope);
+		ObjectRef scope(pRuntime, pRuntime->copy_object(pRuntime->getGlobalScope()));
 		for (auto arg = signature.rbegin(); arg != signature.rend(); ++arg)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId(arg->c_str());
-			pRuntime->assign_name_to_obj(scope, sid, pRuntime->soft_pop_and_deref_id_from_stack());
+			pRuntime->assign_name_to_obj(scope.id(), sid, pRuntime->soft_pop_and_deref_id_from_stack());
 		}
 		
 		if (self != -1)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId("self");
-			pRuntime->assign_name_to_obj(scope, sid, self);
+			pRuntime->assign_name_to_obj(scope.id(), sid, self);
 		}
 
 		pRuntime->push_frame();
-		functionBody->execute(pRuntime, scope);
-		pRuntime->dec_ref(scope);
+		functionBody->execute(pRuntime, scope.id());
 		pRuntime->pop_frame();
 		pRuntime->set_unwinding(false);
+		// TODO: refactor this unsafe passing, release of an object or memory leak may occur
 		objectId id = pRuntime->copy_from_register();
 		if (id != -1)
 		{
@@ -585,7 +377,7 @@ public:
 	}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		pRuntime->put_literal_on_stack(this);
+		pRuntime->allocate_on_stack(this);
 	}
 };
 
@@ -605,7 +397,8 @@ public:
 			expression->execute(pRuntime, context);
 			if (!pRuntime->is_frame_stack_empty())
 			{
-				pRuntime->save_to_register(pRuntime->dereference(pRuntime->stack_top()));
+				ObjectRef stackTop = pRuntime->safe_pop_and_dereference();
+				pRuntime->save_to_register(stackTop.id());
 			}
 		}
 		pRuntime->set_unwinding(true);

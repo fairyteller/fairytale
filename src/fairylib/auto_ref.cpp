@@ -56,6 +56,11 @@ FairyObject* ObjectRef::operator->()  const
 	return pRuntime->getObject(m_id);
 }
 
+FairyObject& ObjectRef::operator*()  const
+{
+	return *(pRuntime->getObject(m_id));
+}
+
 void ObjectRef::reset(objectId id)
 {
 	if (m_id != INVALID_ID)
@@ -63,4 +68,9 @@ void ObjectRef::reset(objectId id)
 	m_id = id;
 	if (m_id != INVALID_ID)
 		pRuntime->inc_ref(m_id);
+}
+
+alloc_guard<FairyObject> ObjectRef::getPtr()
+{
+	return alloc_guard<FairyObject>(pRuntime, pRuntime->getObject(m_id));
 }

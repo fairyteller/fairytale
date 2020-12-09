@@ -9,4 +9,6 @@ add_library(fairylib fairytale.cpp fairytale.h
 					 rules.cpp rules.h
 					 runtime.cpp runtime.h
 					 lexer.cpp lexer.h
+					 abstract_syntax_tree.cpp abstract_syntax_tree.h
+					 config.cpp config.h
 					 )
