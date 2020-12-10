@@ -10,7 +10,21 @@ WIP, use cmake. I tried to only build it for windows with msvcpp19, but there is
 ### how lo launch
 use `./fairytale` in build directory to run interactive mode or pass script filename as first argument to evaluate the file
 
-### Examples
+### Roadmap
+* Catch specific types of exceptions
+* Variadic arguments
+* File IO built-in module
+* Select the names to import from module, import to global namespace
+* Dictionaries
+* List comprehension and range based for
+* Strong Typing
+* Full support for classes
+* Default arguments, named parameters
+* Decorators
+* Overloading
+* Operator overloading
+
+### Current state examples
 (Github extension for Fairytale syntax highlighting is WIP)
 
 #### Math, lambdas, tests, modules
@@ -62,6 +76,39 @@ test.assert_eq(b[2], 3);
 
 b[3] = 10;
 test.assert_eq(b[3], 10);
+
+a = "init";
+try
+{
+	a = "ok";
+}
+catch
+{
+	a = "catched";
+}
+test.assert_eq(a, "ok");
+
+a = "init";
+try
+{
+	a = "ok";
+	throw "just a string"
+}
+catch
+{
+	a = "catched";
+}
+test.assert_eq(a, "catched");
+
+a = "init";
+try
+{
+	throw "just a string"
+	a = "should not be called";
+}
+catch
+{}
+test.assert_eq(a, "init");
 ```
 
 #### OOP-like code (proper classes are in roadmap after strong typing)
@@ -69,7 +116,7 @@ test.assert_eq(b[3], 10);
 
 animal = func(size)
 {
-	self = imported_module.object_with_name("animal")
+	self = object()
 	self.size = size
 	self.legs = 0
 	self.walk = func()
@@ -108,5 +155,4 @@ person.walk()
 person.playSound()
 cat.walk()
 cat.playSound()
-cat.print_name()
 ```
