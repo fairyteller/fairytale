@@ -66,7 +66,10 @@ int Runtime::execute_ast(std::unique_ptr<ASTNode>&& ast)
 {
 	loadedModuleASTs.emplace_back(std::move(ast));
 	loadedModuleASTs.back()->execute(this);
-	return 0;
+	if (isExceptionRaised)
+		return 1;
+	else
+		return 0;
 }
 
 void Runtime::call(objectId id, objectId context)

@@ -24,9 +24,11 @@ public:
 	std::unique_ptr<ASTNode> ParseFileRoot();
 	std::unique_ptr<ASTNode> ParseStatement();
 	std::unique_ptr<ASTNode> ParseBlock();
-	std::unique_ptr<ASTNode> ParseIf();
+	std::unique_ptr<ASTNode> ParseIfElse();
+	std::unique_ptr<ASTNode> ParseTryCatchFinally();
 	std::unique_ptr<ASTNode> ParseWhile();
 	std::unique_ptr<ASTNode> ParseReturn();
+	std::unique_ptr<ASTNode> ParseThrow();
 	std::unique_ptr<ASTNode> ParseStringExpr();
 
 	std::vector < std::string> ParseFunctionSignature();

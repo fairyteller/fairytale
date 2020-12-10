@@ -76,6 +76,7 @@ private:
 size_t readWhileFiltered(const std::string& string, size_t startIndex, const ISymbolFilter& filter);
 
 size_t readWhileNotFiltered(const std::string& string, size_t startIndex, const ISymbolFilter& filter);
+
 enum class TokenType
 {
 	Unknown,
@@ -100,6 +101,10 @@ enum class TokenType
 	Import,
 	Return,
 	Class,
+	Try,
+	Catch,
+	Finally,
+	Throw
 };
 
 struct Token

@@ -1,0 +1,135 @@
+// sample
+i = 1
+getNumber = func()
+{
+	i += 1
+	return i
+	i *= 10
+}
+
+printn(pow(getNumber(), getNumber()))
+printn(pow(getNumber(), getNumber()))
+printn(pow(getNumber(), getNumber()))
+
+
+// sample
+a = func()
+	{
+		i = 0
+		while i < 10
+		{ 
+			if i%2==0
+				printn(i)
+			i = i + 1
+		}
+	}
+
+a()
+
+// sample
+a = "Hello "
+b = "World"
+c = a + b
+print(c)
+
+// sample
+i = 1
+value = i + 2 * i - ( pow(2, 3) + 1)
+testX = func()
+{
+	x = 6
+	i = 5
+}
+testX()
+
+printn(i)
+#trace()
+
+// sample
+print("Enter your name: ")
+name = input()
+response = "Hello, " + name
+print(response)
+
+
+// sample
+recursion_test = func(a, b)
+{
+	a += b
+	if (b < 3)
+		recursion_test(a, b+1)
+	a *= b
+}
+
+
+a = 1
+recursion_test(a, 1)
+print("result: " + str(a))
+
+
+// sample OOP
+imported_module = import_module("test_module.ft")
+
+animal = func(size)
+{
+	self = imported_module.object_with_name("animal")
+	self.size = size
+	self.legs = 0
+	self.walk = func()
+	{
+		print("I have size " + str(self.size) + " and walk on " + str(self.legs) + " legs")
+	}
+	return self;
+}
+
+
+human = func()
+{
+	self = animal(4)
+	self.legs = 2
+	self.playSound = func()
+	{
+		print("Hello, it is a sane language")
+	}
+	return self;
+}
+
+cat = func()
+{
+	self = animal(2)
+	self.legs = 4
+	self.playSound = func()
+	{
+		print("Meow")
+	}
+	return self;
+}
+
+person = human()
+cat = cat()
+person.walk()
+person.playSound()
+cat.walk()
+cat.playSound()
+cat.print_name()
+
+imported_module.func_from_module()
+
+//sample "arrays"
+print("Hello World")
+a = array();
+i = 0;
+while i < 10
+{
+	a = array(a.unroll(), i);
+	i += 1;
+}
+
+a = array(a.unroll(), a.unroll());
+
+k = 0;
+while k < 20
+{
+	print("a["+str(k)+"] == "+str(a[k]));
+	k += 1;
+}

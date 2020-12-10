@@ -22,8 +22,8 @@ class Runtime
 public:
 	Runtime(FairytaleCore* pCore);
 
-	void set_unwinding(bool value) { unwinding = value; }
-	bool is_unwinding() { return unwinding; }
+	void set_stack_unwinding(bool value) { isStackUnwinding = value; }
+	bool is_stack_unwinding() { return isStackUnwinding; }
 
 	template<class T>
 	objectId allocate(T value)
@@ -340,9 +340,32 @@ public:
 		return id;
 	}
 
-	objectId getGlobalScope()
+	objectId get_global_scope()
 	{
 		return globalScopeObject;
+	}
+
+	void set_exception_as_handled()
+	{
+		isExceptionRaised = false;
+		isStackUnwinding = false;
+	}
+	bool is_exception_raised()
+	{
+		return isExceptionRaised;
+	}
+	void throw_exception(objectId exceptionObject)
+	{
+		save_to_register(exceptionObject);
+		isStackUnwinding = true;
+		isExceptionRaised = true;
+	}
+
+	void throw_runtime_error(const std::string& errorText)
+	{
+		//In future it will be: std::string result = errorText +getStackTrace();
+		objectId exception = allocate(getStringTable().getStringId(errorText));
+		throw_exception(exception);
 	}
 
 	size_t direct_memory_usage_semaphore;
@@ -361,7 +384,8 @@ private:
 	std::stack<objectId> interpreterStack;
 	std::stack<stringId> nameUsageStack;
 	std::stack<StackFrame> stackFrames;
-	bool unwinding = false;
+	bool isStackUnwinding = false;
+	bool isExceptionRaised = false;
 	objectId regId = -1;
 
 	std::vector<std::unique_ptr<ASTNode>> loadedModuleASTs;

@@ -114,6 +114,26 @@ struct Rules
 		{
 			token.type = TokenType::Func;
 		}
+		else if (assumedKeyword == "class")
+		{
+			token.type = TokenType::Class;
+		}
+		else if (assumedKeyword == "try")
+		{
+			token.type = TokenType::Try;
+		}
+		else if (assumedKeyword == "catch")
+		{
+			token.type = TokenType::Catch;
+		}
+		else if (assumedKeyword == "finally")
+		{
+			token.type = TokenType::Finally;
+		}
+		else if (assumedKeyword == "throw")
+		{
+			token.type = TokenType::Throw;
+		}
 		else if (assumedKeyword == "return")
 		{
 			token.type = TokenType::Return;

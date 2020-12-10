@@ -68,7 +68,6 @@ public:
 class BinaryExprASTN : public ASTNode {
 	std::string Op;
 	std::unique_ptr<ASTNode> LHS, RHS;
-
 public:
 	BinaryExprASTN(const std::string& op, std::unique_ptr<ASTNode> LHS,
 		std::unique_ptr<ASTNode> RHS)
@@ -163,7 +162,7 @@ public:
 	}
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
-		ObjectRef module_scope(pRuntime, pRuntime->getGlobalScope());
+		ObjectRef module_scope(pRuntime, pRuntime->get_global_scope());
 		body->execute(pRuntime, module_scope.id());
 		pRuntime->push_on_stack(module_scope.id());
 	}
@@ -183,7 +182,7 @@ public:
 		pRuntime->push_frame();
 		for (auto& arg : sequence)
 		{
-			if (pRuntime->is_unwinding())
+			if (pRuntime->is_stack_unwinding())
 				break;
 			pRuntime->clear_stack();
 			arg->execute(pRuntime, context);
@@ -228,6 +227,35 @@ public:
 };
 
 
+class TryCatchFinallyASTN : public ASTNode {
+	std::unique_ptr<ASTNode> tryBlock;
+	std::unique_ptr<ASTNode> catchBlock;
+	std::unique_ptr<ASTNode> finallyBlock;
+	std::string exceptionVariableName;
+public:
+	TryCatchFinallyASTN() {}
+	void setTryBlock(std::unique_ptr<ASTNode>&& node)
+	{
+		tryBlock = std::move(node);
+	}
+	void setCatchBlock(std::unique_ptr<ASTNode>&& node)
+	{
+		catchBlock = std::move(node);
+	}
+	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	{
+		tryBlock->execute(pRuntime, context);
+		if (pRuntime->is_exception_raised() && catchBlock.get())
+		{
+			pRuntime->set_exception_as_handled();
+			catchBlock->execute(pRuntime, context);
+		}
+		if (finallyBlock.get())
+			finallyBlock->execute(pRuntime, context);
+	}
+};
+
+
 class WhileASTN : public ASTNode {
 	std::unique_ptr<ASTNode> condition;
 	std::unique_ptr<ASTNode> innerBlock;
@@ -250,7 +278,7 @@ public:
 		{
 			innerBlock->execute(pRuntime, context);
 			condition->execute(pRuntime, context);
-			if (pRuntime->is_unwinding())
+			if (pRuntime->is_stack_unwinding())
 			{
 				break;
 			}
@@ -275,7 +303,7 @@ public:
 	}
 	virtual void call(Runtime* pRuntime, objectId self)
 	{
-		ObjectRef scope(pRuntime, pRuntime->copy_object(pRuntime->getGlobalScope()));
+		ObjectRef scope(pRuntime, pRuntime->copy_object(pRuntime->get_global_scope()));
 		for (auto arg = signature.rbegin(); arg != signature.rend(); ++arg)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId(arg->c_str());
@@ -291,7 +319,9 @@ public:
 		pRuntime->push_frame();
 		functionBody->execute(pRuntime, scope.id());
 		pRuntime->pop_frame();
-		pRuntime->set_unwinding(false);
+		if (pRuntime->is_exception_raised())
+			return;
+		pRuntime->set_stack_unwinding(false);
 		// TODO: refactor this unsafe passing, release of an object or memory leak may occur
 		objectId id = pRuntime->copy_from_register();
 		if (id != -1)
@@ -327,6 +357,31 @@ public:
 				pRuntime->save_to_register(stackTop.id());
 			}
 		}
-		pRuntime->set_unwinding(true);
+		pRuntime->set_stack_unwinding(true);
 	}
 };
+
+class ThrowASTN : public ASTNode {
+	std::unique_ptr<ASTNode> expression;
+
+public:
+	ThrowASTN() {}
+	void setExpression(std::unique_ptr<ASTNode>&& node)
+	{
+		expression = std::move(node);
+	}
+	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	{
+		if (expression.get())
+		{
+			expression->execute(pRuntime, context);
+			if (!pRuntime->is_frame_stack_empty())
+			{
+				ObjectRef stackTop = pRuntime->safe_pop_and_dereference();
+				pRuntime->throw_exception(stackTop.id());
+			}
+		}
+
+	}
+};
+

@@ -98,7 +98,8 @@ std::string FairyObject::toString(Runtime* pRuntime)
 		return m_value.asBool ? "true" : "false";
 	if (m_type == FairyObjectType::String)
 		return pRuntime->getStringTable().getString(m_value.asString);
-	assert(!"Type is not covnertible into str");
+	pRuntime->throw_runtime_error("Type is not covnertible into str");
+	return "";
 }
 
 bool FairyObject::toBool(Runtime* pRuntime)

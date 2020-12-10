@@ -219,6 +219,11 @@ void __more_eq_than__(Runtime* pRuntime, objectId context)
 void __minus_prefix__(Runtime* pRuntime, objectId context)
 {
 	ObjectRef arg = pRuntime->safe_pop_and_dereference();
+	if (arg->getType() != FairyObjectType::Int)
+	{
+		pRuntime->throw_runtime_error("Object " + std::to_string(arg.id()) + " should have a type Int");
+		return;
+	}
 	pRuntime->allocate_on_stack(-arg->asLong());
 }
 

@@ -1,0 +1,11 @@
+a = 5;
+try
+{
+	a = 10;
+	throw "Hello";
+}
+catch
+{
+	a = 15;
+}
+print(a);
