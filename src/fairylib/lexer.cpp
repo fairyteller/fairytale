@@ -22,6 +22,13 @@ void Lexer::tokenize(const std::string& input)
 			currIndex = nextIndex;
 			continue;
 		}
+		nextIndex = rules.floatRule.checkIfToken(input.c_str(), currIndex);
+		if (nextIndex != currIndex)
+		{
+			tokens.push_back(rules.floatRule.build(input, currIndex, nextIndex));
+			currIndex = nextIndex;
+			continue;
+		}
 		nextIndex = rules.numberRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
@@ -158,9 +165,18 @@ std::unique_ptr<ASTNode> Lexer::ParseStringExpr() {
 
 
 std::unique_ptr<ASTNode> Lexer::ParseNumberExpr() {
-	auto Result = std::make_unique<NumberASTN>(tokens[currentToken].content);
-	currentToken++;
-	return std::move(Result);
+	if (strstr(tokens[currentToken].content.c_str(), ".") == 0)
+	{
+		auto Result = std::make_unique<NumberASTN>(tokens[currentToken].content);
+		currentToken++;
+		return std::move(Result);
+	}
+	else
+	{
+		auto Result = std::make_unique<FloatASTN>(tokens[currentToken].content);
+		currentToken++;
+		return std::move(Result);
+	}
 }
 
 std::unique_ptr<ASTNode> Lexer::ParseParenExpr() {

@@ -76,6 +76,8 @@ long long FairyObject::toLong(Runtime* pRuntime)
 		return m_value.asLong;
 	if (m_type == FairyObjectType::Bool)
 		return m_value.asBool;
+	if (m_type == FairyObjectType::Float)
+		return m_value.asDouble;
 	if (m_type == FairyObjectType::String)
 		return atoll(pRuntime->getStringTable().getString(m_value.asString));
 	assert(!"Type is not covnertible into int");
@@ -94,6 +96,8 @@ std::string FairyObject::toString(Runtime* pRuntime)
 {
 	if (m_type == FairyObjectType::Int)
 		return std::to_string(m_value.asLong);
+	if (m_type == FairyObjectType::Float)
+		return std::to_string(m_value.asDouble);
 	if (m_type == FairyObjectType::Bool)
 		return m_value.asBool ? "true" : "false";
 	if (m_type == FairyObjectType::String)
@@ -106,6 +110,8 @@ bool FairyObject::toBool(Runtime* pRuntime)
 {
 	if (m_type == FairyObjectType::Int)
 		return (bool)m_value.asLong;
+	if (m_type == FairyObjectType::Float)
+		return (bool)m_value.asDouble;
 	if (m_type == FairyObjectType::Bool)
 		return m_value.asBool;
 	if (m_type == FairyObjectType::String)

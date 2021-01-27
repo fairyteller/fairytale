@@ -66,6 +66,11 @@ public:
 		m_value.asLong = value;
 		m_type = FairyObjectType::Int;
 	}
+	FairyObject(double value)
+	{
+		m_value.asDouble = value;
+		m_type = FairyObjectType::Float;
+	}
 	FairyObject(bool value)
 	{
 		m_value.asBool = value;
@@ -111,6 +116,10 @@ public:
 		{
 			m_value.asLong += rhs.m_value.asLong;
 		}
+		if (m_type == FairyObjectType::Float)
+		{
+			m_value.asDouble += rhs.m_value.asDouble;
+		}
 	}
 
 	void operator-=(FairyObject& rhs)
@@ -119,6 +128,10 @@ public:
 		if (m_type == FairyObjectType::Int)
 		{
 			m_value.asLong -= rhs.m_value.asLong;
+		}
+		if (m_type == FairyObjectType::Float)
+		{
+			m_value.asDouble -= rhs.m_value.asDouble;
 		}
 	}
 
@@ -129,6 +142,10 @@ public:
 		{
 			m_value.asLong *= rhs.m_value.asLong;
 		}
+		if (m_type == FairyObjectType::Float)
+		{
+			m_value.asDouble *= rhs.m_value.asDouble;
+		}
 	}
 
 	void operator/=(FairyObject& rhs)
@@ -137,6 +154,10 @@ public:
 		if (m_type == FairyObjectType::Int)
 		{
 			m_value.asLong /= rhs.m_value.asLong;
+		}
+		if (m_type == FairyObjectType::Float)
+		{
+			m_value.asDouble /= rhs.m_value.asDouble;
 		}
 	}
 
@@ -168,6 +189,13 @@ public:
 				return true;
 			}
 		}
+		else if (m_type == FairyObjectType::Float)
+		{
+			if (m_value.asDouble == rhs.m_value.asDouble)
+			{
+				return true;
+			}
+		}
 		else if (m_type == FairyObjectType::String)
 		{
 			if (m_value.asString == rhs.m_value.asString)
@@ -195,6 +223,13 @@ public:
 				return true;
 			}
 		}
+		else if (m_type == FairyObjectType::Float)
+		{
+			if (m_value.asDouble < rhs.m_value.asDouble)
+			{
+				return true;
+			}
+		}
 		return false;
 	}
 	bool operator>(FairyObject& rhs)
@@ -211,6 +246,13 @@ public:
 		else if (m_type == FairyObjectType::Int)
 		{
 			if (m_value.asLong > rhs.m_value.asLong)
+			{
+				return true;
+			}
+		}
+		else if (m_type == FairyObjectType::Float)
+		{
+			if (m_value.asDouble > rhs.m_value.asDouble)
 			{
 				return true;
 			}
@@ -263,6 +305,11 @@ public:
 	{
 		assert(m_type == FairyObjectType::String);
 		return m_value.asString;
+	}
+	stringId asDouble()
+	{
+		assert(m_type == FairyObjectType::Float);
+		return m_value.asDouble;
 	}
 	FairyReference& asReference()
 	{

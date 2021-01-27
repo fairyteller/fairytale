@@ -19,7 +19,7 @@ public:
 	//const alloc_guard<T>& operator=(const alloc_guard<T>& rhs)
 	~alloc_guard()
 	{
-		pRuntime->direct_memory_usage_semaphore++;
+		pRuntime->direct_memory_usage_semaphore--;
 	}
 
 	T* operator->() const { return pData; }

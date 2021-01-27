@@ -5,59 +5,15 @@
 #include <stdio.h>
 #include <string>
 
-template<typename T>
-T script_cast(Runtime* pRuntime, objectId id);
-
-template<>
-long long script_cast<long long>(Runtime* pRuntime, objectId id);
-
-template<class Ret, class A0, class A1, typename F, F func>
-void smart_wrapper(Runtime* pRuntime, objectId context)
-{
-	auto b = script_cast<A1>(pRuntime, pRuntime->safe_pop_and_dereference().id());
-	auto a = script_cast<A0>(pRuntime, pRuntime->safe_pop_and_dereference().id());
-	pRuntime->push_on_stack(pRuntime->allocate(func(a, b)));
-}
-
-template<class Ret, class A0, typename F, F func>
-void smart_wrapper(Runtime* pRuntime, objectId context)
-{
-	auto a = script_cast<A0>(pRuntime, pRuntime->safe_pop_and_dereference().id());
-	pRuntime->push_on_stack(pRuntime->allocate(func(a)));
-}
-
-template<class Ret, class A0, class A1, Ret(*func)(A0, A1)>
-WrappedFunction wrap()
-{
-	return smart_wrapper<Ret, A0, A1, decltype(func), func>;
-}
-
-template<class Ret, class A0, Ret(*func)(A0)>
-WrappedFunction wrap()
-{
-	return smart_wrapper<Ret, A0, decltype(func), func>;
-}
-
-
-long long sum(long long a, long long b);
-
 void sum_wrapper(Runtime* pRuntime, objectId context);
-
-long long sub(long long a, long long b);
 
 void sub_wrapper(Runtime* pRuntime, objectId context);
 
-long long mul(long long a, long long b);
-
 void mul_wrapper(Runtime* pRuntime, objectId context);
-
-long long __div__(long long a, long long b);
-
-long long __mod__(long long a, long long b);
 
 void div_wrapper(Runtime* pRuntime, objectId context);
 
-long long pow(long long a, long long b);
+void mod_wrapper(Runtime* pRuntime, objectId context);
 
 void pow_wrapper(Runtime* pRuntime, objectId context);
 

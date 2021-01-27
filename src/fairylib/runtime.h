@@ -220,14 +220,21 @@ public:
 		return result;
 	}
 
-	objectId register_global_function(const char* name, WrappedFunction fn)
+	objectId register_function_in_module(objectId moduleId, const char* name, WrappedFunction fn)
 	{
+		assert(getObject(moduleId)->getType() == FairyObjectType::Module);
 		stringId sid = getStringTable().getStringId(name);
 		objectId functionId = allocate(fn);
-		assign_name_to_obj(globalScopeObject, sid, functionId);
+		assign_name_to_obj(moduleId, sid, functionId);
 		return functionId;
 	}
 
+	objectId register_global_function(const char* name, WrappedFunction fn)
+	{
+		return register_function_in_module(globalScopeObject, name, fn);
+	}
+
+	void call_method(objectId id, stringId methodId);
 	void call(objectId id, objectId context = -1);
 
 	void printStack()

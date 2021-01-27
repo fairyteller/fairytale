@@ -24,3 +24,8 @@ int Fairytale::interpret_file(const char* filename)
 {
 	return m_pCore->interpret_file(filename);
 }
+
+Runtime* Fairytale::get_runtime()
+{
+	return m_pCore->get_runtime();
+}

@@ -28,6 +28,22 @@ public:
 	}
 };
 
+
+class FloatASTN : public ASTNode
+{
+	double m_value;
+public:
+	FloatASTN(double value) : m_value(value) {}
+	FloatASTN(const std::string& str)
+	{
+		m_value = std::stod(str, 0);
+	}
+	virtual void execute(Runtime* pRuntime, objectId context = -1)
+	{
+		pRuntime->allocate_on_stack(m_value);
+	}
+
+};
 class BooleanASTN : public ASTNode
 {
 	bool m_value;

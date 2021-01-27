@@ -15,10 +15,10 @@ Runtime::Runtime(FairytaleCore* pCore)
 	inc_ref(globalScopeObject);
 	register_global_function("pow", pow_wrapper);
 	register_global_function("+", sum_wrapper);
-	register_global_function("-", wrap<long long, long long, long long, sub>());
-	register_global_function("*", wrap<long long, long long, long long, mul >());
-	register_global_function("/", wrap<long long, long long, long long, __div__>());
-	register_global_function("%", wrap<long long, long long, long long, __mod__>());
+	register_global_function("-", sub_wrapper);
+	register_global_function("*", mul_wrapper);
+	register_global_function("/", div_wrapper);
+	register_global_function("%", mod_wrapper);
 	register_global_function("+=", sum_compound);
 	register_global_function("-=", sub_compound);
 	register_global_function("*=", mul_compound);
@@ -70,6 +70,15 @@ int Runtime::execute_ast(std::unique_ptr<ASTNode>&& ast)
 		return 1;
 	else
 		return 0;
+}
+
+void Runtime::call_method(objectId id, stringId methodId)
+{
+	ObjectRef ref(this, id);
+	ObjectRef dereferenced_obj = safe_dereference(ref);
+	objectId callee = dereferenced_obj->getattr(this, methodId);
+	call(callee, dereferenced_obj.id());
+
 }
 
 void Runtime::call(objectId id, objectId context)

@@ -2,17 +2,6 @@
 #include "standard_library.h"
 #include "abstract_syntax_tree.h"
 
-template<>
-long long script_cast<long long>(Runtime* pRuntime, objectId id)
-{
-	return pRuntime->getObject(id)->asLong();
-}
-
-long long sum(long long a, long long b)
-{
-	return a + b;
-}
-
 void sum_wrapper(Runtime* pRuntime, objectId context)
 {
 	ObjectRef b = pRuntime->safe_pop_and_dereference();
@@ -21,6 +10,11 @@ void sum_wrapper(Runtime* pRuntime, objectId context)
 	if (a->getType() == FairyObjectType::Int)
 	{
 		long long summed = a->asLong() + b->asLong();
+		pRuntime->allocate_on_stack(summed);
+	}
+	if (a->getType() == FairyObjectType::Float)
+	{
+		double summed = a->asDouble() + b->asDouble();
 		pRuntime->allocate_on_stack(summed);
 	}
 	else if (a->getType() == FairyObjectType::String)
@@ -32,62 +26,84 @@ void sum_wrapper(Runtime* pRuntime, objectId context)
 	}
 }
 
-long long sub(long long a, long long b)
-{
-	return a - b;
-}
-
 void sub_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->safe_pop_and_dereference()->asLong();
-	long long a = pRuntime->safe_pop_and_dereference()->asLong();
-	pRuntime->allocate_on_stack(sub(a,b));
-}
-
-long long mul(long long a, long long b)
-{
-	return a * b;
+	ObjectRef b = pRuntime->safe_pop_and_dereference();
+	ObjectRef a = pRuntime->safe_pop_and_dereference();
+	assert(b->getType() == a->getType());
+	if (a->getType() == FairyObjectType::Int)
+	{
+		long long summed = a->asLong() - b->asLong();
+		pRuntime->allocate_on_stack(summed);
+	}
+	if (a->getType() == FairyObjectType::Float)
+	{
+		double summed = a->asDouble() - b->asDouble();
+		pRuntime->allocate_on_stack(summed);
+	}
 }
 
 void mul_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->safe_pop_and_dereference()->asLong();
-	long long a = pRuntime->safe_pop_and_dereference()->asLong();
-	pRuntime->allocate_on_stack(mul(a, b));
-}
-
-long long __div__(long long a, long long b)
-{
-	return a / b;
-}
-
-long long __mod__(long long a, long long b)
-{
-	return a % b;
+	ObjectRef b = pRuntime->safe_pop_and_dereference();
+	ObjectRef a = pRuntime->safe_pop_and_dereference();
+	assert(b->getType() == a->getType());
+	if (a->getType() == FairyObjectType::Int)
+	{
+		long long summed = a->asLong() * b->asLong();
+		pRuntime->allocate_on_stack(summed);
+	}
+	if (a->getType() == FairyObjectType::Float)
+	{
+		double summed = a->asDouble() * b->asDouble();
+		pRuntime->allocate_on_stack(summed);
+	}
 }
 
 void div_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->safe_pop_and_dereference()->asLong();
-	long long a = pRuntime->safe_pop_and_dereference()->asLong();
-	pRuntime->allocate_on_stack(__div__(a, b));
+	ObjectRef b = pRuntime->safe_pop_and_dereference();
+	ObjectRef a = pRuntime->safe_pop_and_dereference();
+	assert(b->getType() == a->getType());
+	if (a->getType() == FairyObjectType::Int)
+	{
+		long long summed = a->asLong() / b->asLong();
+		pRuntime->allocate_on_stack(summed);
+	}
+	if (a->getType() == FairyObjectType::Float)
+	{
+		double summed = a->asDouble() / b->asDouble();
+		pRuntime->allocate_on_stack(summed);
+	}
 }
 
-long long pow(long long a, long long b)
+void mod_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long result = 1;
-	while (b-- > 0)
+	ObjectRef b = pRuntime->safe_pop_and_dereference();
+	ObjectRef a = pRuntime->safe_pop_and_dereference();
+	assert(b->getType() == a->getType());
+	if (a->getType() == FairyObjectType::Int)
 	{
-		result *= a;
+		long long summed = a->asLong() % b->asLong();
+		pRuntime->allocate_on_stack(summed);
 	}
-	return result;
 }
 
 void pow_wrapper(Runtime* pRuntime, objectId context)
 {
-	long long b = pRuntime->safe_pop_and_dereference()->asLong();
-	long long a = pRuntime->safe_pop_and_dereference()->asLong();
-	pRuntime->allocate_on_stack(pow(a, b));
+	ObjectRef b = pRuntime->safe_pop_and_dereference();
+	ObjectRef a = pRuntime->safe_pop_and_dereference();
+	assert(b->getType() == a->getType());
+	if (a->getType() == FairyObjectType::Int)
+	{
+		long long summed = pow(a->asLong(), b->asLong());
+		pRuntime->allocate_on_stack(summed);
+	}
+	if (a->getType() == FairyObjectType::Float)
+	{
+		double summed = pow(a->asDouble(), b->asDouble());
+		pRuntime->allocate_on_stack(summed);
+	}
 }
 
 void assign(Runtime* pRuntime, objectId context)
@@ -166,7 +182,7 @@ void mod_compound(Runtime* pRuntime, objectId context)
 	ObjectRef lhsDeref = pRuntime->safe_dereference(lhs);
 	pRuntime->push_on_stack(lhsDeref.id());
 	pRuntime->push_on_stack(rhs.id());
-	wrap<long long, long long, long long, __mod__>()(pRuntime, context);
+	mod_wrapper(pRuntime, context);
 	ObjectRef opResult = pRuntime->safe_pop();
 	assert(lhs->getType() == FairyObjectType::Reference);
 	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, opResult.id());

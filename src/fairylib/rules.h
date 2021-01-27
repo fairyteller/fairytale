@@ -5,6 +5,7 @@
 struct Rules
 {
 	RangeBasedFilter spacesAndTabs;
+	RangeBasedFilter dot;
 	RangeBasedFilter digit;
 	RangeBasedFilter brace;
 	RangeBasedFilter squareBrace;
@@ -22,6 +23,7 @@ struct Rules
 	RangeBasedFilter commentEnd;
 
 	TokenRules numberRule;
+	TokenRules floatRule;
 	TokenRules braceRule;
 	TokenRules operatorRule;
 	TokenRules identifierRule;
@@ -176,6 +178,7 @@ struct Rules
 	{
 		spacesAndTabs.set('\t').unite(' ');
 		digit.set({ '0' , '9' });
+		dot.set('.');
 		operatorSymbols.set('+').unite('-').unite('*').unite('/').unite('=').unite('>').unite('<').unite('&').unite('|').unite('!').unite('%').unite('.').unite('@');
 		parenthesis.set('(').unite(')').unite(',');
 		brace.set('{').unite('}');
@@ -183,13 +186,14 @@ struct Rules
 		englishLetters.set({ 'A','Z' }).unite({ 'a', 'z' });
 		validIdentifierFirstSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_');
 		validIdentifierSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_').unite({ '0','9' });
-		expressionEnd.set('\n').unite(';').unite('\0');
+		expressionEnd.set('\n').unite(';').unite('\0').unite('\r');
 		commentEnd.set('\n').unite('\0');
 		quote.set('\"');
 		numberSign.set('#');
 		stringContentSymbol.set({ 1, '\"' - 1 }).unite({ '\"' + 1, 126 });
 		commentContentSymbol.set({ 1, '\n' - 1 }).unite({ '\n' + 1, 126 });
 
+		floatRule.setFactory(createNumberToken) << SymbolSequence{ 0, UINT32_MAX, digit } << SymbolSequence{ 1, 1, dot } << SymbolSequence{ 1, UINT32_MAX, digit };
 		numberRule.setFactory(createNumberToken) << SymbolSequence{ 1, UINT32_MAX, digit };
 		operatorRule.setFactory(createOperatorToken) << SymbolSequence{ 1, 2, operatorSymbols };
 		identifierRule.setFactory(createIdentifierToken) << SymbolSequence{ 1, 1, validIdentifierFirstSymbol } << SymbolSequence{ 0, UINT32_MAX, validIdentifierSymbol };
