@@ -9,4 +9,4 @@ add_subdirectory (src/fairytale)
 add_subdirectory (src/fairylib)
 #add_subdirectory (src/tests)
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT fairytale) 
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT fairytale)  

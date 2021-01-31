@@ -66,6 +66,11 @@ public:
 		m_value.asLong = value;
 		m_type = FairyObjectType::Int;
 	}
+	FairyObject(float value)
+	{
+		m_value.asDouble = value;
+		m_type = FairyObjectType::Float;
+	}
 	FairyObject(double value)
 	{
 		m_value.asDouble = value;
@@ -306,7 +311,7 @@ public:
 		assert(m_type == FairyObjectType::String);
 		return m_value.asString;
 	}
-	stringId asDouble()
+	double asDouble()
 	{
 		assert(m_type == FairyObjectType::Float);
 		return m_value.asDouble;

@@ -13,6 +13,8 @@ public:
 	}
 };
 
+#define EXCEPTION_BARRIER if (pRuntime->is_exception_raised()) return;
+
 class NumberASTN : public ASTNode
 {
 	long long m_value;
@@ -92,11 +94,15 @@ public:
 	{
 		if (LHS.get())
 			LHS->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		if (RHS.get())
 			RHS->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		stringId sid = pRuntime->getStringTable().getStringId(Op);
 		objectId oid = pRuntime->get_existing_object_or_allocate(context, sid);
+		EXCEPTION_BARRIER
 		pRuntime->call(oid);
+		EXCEPTION_BARRIER
 	}
 };
 
@@ -111,8 +117,11 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		LHS->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		ObjectRef lhs = pRuntime->safe_pop_and_dereference();
+		EXCEPTION_BARRIER
 		RHS->execute(pRuntime, lhs.id());
+		EXCEPTION_BARRIER
 	}
 };
 
@@ -127,20 +136,25 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context)
 	{
 		Callee->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		ObjectRef callee = pRuntime->safe_pop();
 
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 		}
 		if (callee->getType() == FairyObjectType::Reference)
 		{
 			ObjectRef dereferencedCallee = pRuntime->safe_dereference(callee);
+			EXCEPTION_BARRIER
 			pRuntime->call(dereferencedCallee.id(), callee->asReference().ownerTable);
+			EXCEPTION_BARRIER
 		}
 		else
 		{
 			pRuntime->call(callee.id(), context);
+			EXCEPTION_BARRIER
 		}
 	}
 };
@@ -157,14 +171,19 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		Collection->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		ObjectRef collection = pRuntime->safe_pop_and_dereference();
+		EXCEPTION_BARRIER
 		for (auto& arg : Args)
 		{
 			arg->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 		}
 		stringId indexMethodSID = pRuntime->getStringTable().getStringId("__index__");
 		objectId indexMethod = collection->getattr(pRuntime, indexMethodSID);
+		EXCEPTION_BARRIER
 		pRuntime->call(indexMethod, collection.id());
+		EXCEPTION_BARRIER
 	}
 };
 
@@ -179,8 +198,11 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		ObjectRef module_scope(pRuntime, pRuntime->get_global_scope());
+		EXCEPTION_BARRIER
 		body->execute(pRuntime, module_scope.id());
+		EXCEPTION_BARRIER
 		pRuntime->push_on_stack(module_scope.id());
+		EXCEPTION_BARRIER
 	}
 };
 
@@ -202,6 +224,7 @@ public:
 				break;
 			pRuntime->clear_stack();
 			arg->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 		}
 		pRuntime->pop_frame();
 	}
@@ -229,15 +252,19 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		condition->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		ObjectRef conditionResult = pRuntime->safe_pop_and_dereference();
+		EXCEPTION_BARRIER
 		if (conditionResult->asBool() == true)
 		{
 			trueBlock->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 		}
 		else
 		{
 			if (falseBlock.get())
 				falseBlock->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 		}
 	}
 };
@@ -289,16 +316,21 @@ public:
 	virtual void execute(Runtime* pRuntime, objectId context = -1)
 	{
 		condition->execute(pRuntime, context);
+		EXCEPTION_BARRIER
 		ObjectRef conditionResult = pRuntime->safe_pop_and_dereference();
+		EXCEPTION_BARRIER
 		while (conditionResult->asBool() == true)
 		{
 			innerBlock->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 			condition->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 			if (pRuntime->is_stack_unwinding())
 			{
 				break;
 			}
 			conditionResult = pRuntime->safe_pop_and_dereference();
+			EXCEPTION_BARRIER
 		}
 	}
 };
@@ -320,23 +352,25 @@ public:
 	virtual void call(Runtime* pRuntime, objectId self)
 	{
 		ObjectRef scope(pRuntime, pRuntime->copy_object(pRuntime->get_global_scope()));
+		EXCEPTION_BARRIER
 		for (auto arg = signature.rbegin(); arg != signature.rend(); ++arg)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId(arg->c_str());
 			pRuntime->assign_name_to_obj(scope.id(), sid, pRuntime->soft_pop_and_deref_id_from_stack());
+			EXCEPTION_BARRIER
 		}
 
 		if (self != -1)
 		{
 			stringId sid = pRuntime->getStringTable().getStringId("self");
 			pRuntime->assign_name_to_obj(scope.id(), sid, self);
+			EXCEPTION_BARRIER
 		}
 
 		pRuntime->push_frame();
 		functionBody->execute(pRuntime, scope.id());
 		pRuntime->pop_frame();
-		if (pRuntime->is_exception_raised())
-			return;
+		EXCEPTION_BARRIER
 		pRuntime->set_stack_unwinding(false);
 		// TODO: refactor this unsafe passing, release of an object or memory leak may occur
 		objectId id = pRuntime->copy_from_register();
@@ -367,10 +401,13 @@ public:
 		if (expression.get())
 		{
 			expression->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 			if (!pRuntime->is_frame_stack_empty())
 			{
 				ObjectRef stackTop = pRuntime->safe_pop_and_dereference();
+				EXCEPTION_BARRIER
 				pRuntime->save_to_register(stackTop.id());
+				EXCEPTION_BARRIER
 			}
 		}
 		pRuntime->set_stack_unwinding(true);
@@ -391,9 +428,11 @@ public:
 		if (expression.get())
 		{
 			expression->execute(pRuntime, context);
+			EXCEPTION_BARRIER
 			if (!pRuntime->is_frame_stack_empty())
 			{
 				ObjectRef stackTop = pRuntime->safe_pop_and_dereference();
+				EXCEPTION_BARRIER
 				pRuntime->throw_exception(stackTop.id());
 			}
 		}

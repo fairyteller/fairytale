@@ -93,6 +93,6 @@ void Runtime::call(objectId id, objectId context)
 		pObj->asFairyFunction()->call(this, context);
 	}
 	else
-		assert(!"Object is not callable");
+		throw_runtime_error("Object is not callable");
 }
 

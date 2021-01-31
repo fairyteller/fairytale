@@ -111,7 +111,12 @@ void assign(Runtime* pRuntime, objectId context)
 	ObjectRef rhs = pRuntime->safe_pop_and_dereference();
 	ObjectRef lhs = pRuntime->safe_pop();
 	ObjectRef lhsDeref = pRuntime->safe_dereference(lhs);
-	assert(lhs->getType() == FairyObjectType::Reference);
+	
+	if (lhs->getType() != FairyObjectType::Reference)
+	{
+		pRuntime->throw_runtime_error("Assignment left side should be a reference");
+		return;
+	}
 	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, rhs.id());
 	pRuntime->push_on_stack(lhs.id());
 }
@@ -235,12 +240,17 @@ void __more_eq_than__(Runtime* pRuntime, objectId context)
 void __minus_prefix__(Runtime* pRuntime, objectId context)
 {
 	ObjectRef arg = pRuntime->safe_pop_and_dereference();
-	if (arg->getType() != FairyObjectType::Int)
+	if (arg->getType() == FairyObjectType::Int)
 	{
-		pRuntime->throw_runtime_error("Object " + std::to_string(arg.id()) + " should have a type Int");
+		pRuntime->allocate_on_stack(-arg->asLong());
 		return;
 	}
-	pRuntime->allocate_on_stack(-arg->asLong());
+	else if (arg->getType() == FairyObjectType::Float)
+	{
+		pRuntime->allocate_on_stack(-arg->asDouble());
+		return;
+	}
+	pRuntime->throw_runtime_error("Object " + std::to_string(arg.id()) + " should have a type Int");
 }
 
 void print_wrapper(Runtime* pRuntime, objectId context)

@@ -26,6 +26,12 @@ public:
 	bool is_stack_unwinding() { return isStackUnwinding; }
 
 	template<class T>
+	ObjectRef safe_allocate(T value)
+	{
+		return ObjectRef(this, allocate(value));
+	}
+
+	template<class T>
 	objectId allocate(T value)
 	{
 		assert(direct_memory_usage_semaphore == 0);
@@ -82,9 +88,13 @@ public:
 		freeIds.push(id);
 	}
 
-	void assign_name_to_obj(objectId parentTable, stringId sid, objectId od)
+	void assign_name_to_obj(objectId parentTable, const char* name, objectId object)
 	{
-		getObject(parentTable)->setattr(this, sid, od);
+		assign_name_to_obj(parentTable, getStringTable().getStringId(name), object);
+	}
+	void assign_name_to_obj(objectId parentTable, stringId sid, objectId object)
+	{
+		getObject(parentTable)->setattr(this, sid, object);
 	}
 
 	void push_on_stack(objectId id)
@@ -220,13 +230,22 @@ public:
 		return result;
 	}
 
+	template<class T>
+	objectId set_member(objectId parentId, const char* name, T value)
+	{
+		stringId sid = getStringTable().getStringId(name);
+		ObjectRef valueRef = safe_allocate(value);
+		assign_name_to_obj(parentId, sid, valueRef.id());
+		return valueRef.id();
+	}
+	objectId register_member_function(objectId parentId, const char* name, WrappedFunction fn)
+	{
+		return set_member(parentId, name, fn);
+	}
 	objectId register_function_in_module(objectId moduleId, const char* name, WrappedFunction fn)
 	{
 		assert(getObject(moduleId)->getType() == FairyObjectType::Module);
-		stringId sid = getStringTable().getStringId(name);
-		objectId functionId = allocate(fn);
-		assign_name_to_obj(moduleId, sid, functionId);
-		return functionId;
+		return register_member_function(moduleId, name, fn);
 	}
 
 	objectId register_global_function(const char* name, WrappedFunction fn)

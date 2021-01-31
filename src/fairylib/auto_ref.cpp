@@ -2,6 +2,18 @@
 #include "fairytale_core.h"
 #include "abstract_syntax_tree.h"
 
+
+
+void increment_semaphore(Runtime* pRuntime)
+{
+	pRuntime->direct_memory_usage_semaphore++;
+}
+
+void decrement_semaphore(Runtime* pRuntime)
+{
+	pRuntime->direct_memory_usage_semaphore--;
+}
+
 ObjectRef::ObjectRef(Runtime* pRuntime, objectId id)
 	: m_id(id)
 	, pRuntime(pRuntime)

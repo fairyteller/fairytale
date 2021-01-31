@@ -3,6 +3,9 @@
 
 class Runtime;
 
+void increment_semaphore(Runtime* pRuntime);
+void decrement_semaphore(Runtime* pRuntime);
+
 // while we operate with raw pointer we should be sure that no allocation happens that can invalidate them
 template<class T>
 class alloc_guard
@@ -10,16 +13,16 @@ class alloc_guard
 public:
 	alloc_guard(Runtime* pRuntime, T* ptr) : pData(ptr), pRuntime(pRuntime)
 	{
-		pRuntime->direct_memory_usage_semaphore++;
+		increment_semaphore(pRuntime);
 	};
 	alloc_guard(const alloc_guard<T>& rhs) : pData(rhs.pData), pRuntime(rhs)
 	{
-		pRuntime->direct_memory_usage_semaphore++;
+		increment_semaphore(pRuntime);
 	}
 	//const alloc_guard<T>& operator=(const alloc_guard<T>& rhs)
 	~alloc_guard()
 	{
-		pRuntime->direct_memory_usage_semaphore--;
+		decrement_semaphore(pRuntime);
 	}
 
 	T* operator->() const { return pData; }
