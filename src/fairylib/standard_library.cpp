@@ -1,6 +1,7 @@
 #pragma once
 #include "standard_library.h"
 #include "abstract_syntax_tree.h"
+#include <cstring>
 
 void sum_wrapper(Runtime* pRuntime, objectId context)
 {
