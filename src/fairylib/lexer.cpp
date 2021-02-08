@@ -4,6 +4,7 @@
 #include "abstract_syntax_tree.h"
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 //TODO: implement bytecode caching
 void Lexer::tokenize(const std::string& input)
