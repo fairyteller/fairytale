@@ -7,75 +7,87 @@
 #include <cstring>
 
 //TODO: implement bytecode caching
-void Lexer::tokenize(const std::string& input)
+//TODO: refactor token deduction into processing declarative form
+void Lexer::tokenize(const std::string& filename, const std::string& input)
 {
 	tokens.clear();
 	currentToken = 0;
 	size_t currIndex = 0;
 	size_t nextIndex = 0;
+	int line = 1;
 	while (input[currIndex] != 0)
 	{
+		SourceCodePosition sourceCodePosition{&filename, line};
 		currIndex = rules.skipIndents(input, currIndex);
 		nextIndex = rules.operatorRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.operatorRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.operatorRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.floatRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.floatRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.floatRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.numberRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.numberRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.numberRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.identifierRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.identifierRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.identifierRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.squareBracetRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.squareBracetRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.squareBracetRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.parenthesisRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.parenthesisRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.parenthesisRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.expressionEndRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.expressionEndRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.expressionEndRule.build(input, currIndex, nextIndex, sourceCodePosition));
+			currIndex = nextIndex;
+			continue;
+		}
+		nextIndex = rules.newLineRule.checkIfToken(input.c_str(), currIndex);
+		if (nextIndex != currIndex)
+		{
+			tokens.push_back(rules.newLineRule.build(input, currIndex, nextIndex, sourceCodePosition));
+			//hack for storing line number
+			line++;
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.braceRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.braceRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.braceRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
 		nextIndex = rules.stringLiteralRule.checkIfToken(input.c_str(), currIndex);
 		if (nextIndex != currIndex)
 		{
-			tokens.push_back(rules.stringLiteralRule.build(input, currIndex, nextIndex));
+			tokens.push_back(rules.stringLiteralRule.build(input, currIndex, nextIndex, sourceCodePosition));
 			currIndex = nextIndex;
 			continue;
 		}
@@ -118,9 +130,9 @@ std::vector<BytecodeItem> Lexer::translate(const std::vector<Token>& tokens)
 */
 
 //TODO: implement bytecode caching
-std::unique_ptr<ASTNode> Lexer::getAST(const std::string& input)
+std::unique_ptr<ASTNode> Lexer::getAST(const std::string& filename, const std::string& input)
 {
-	tokenize(input);
+	tokenize(filename, input);
 	return std::move(buildAST());
 }
 
@@ -414,6 +426,7 @@ std::unique_ptr<ASTNode> Lexer::ParseBinaryOperatorRHS(int ExprPrec,
 		std::unique_ptr<ASTNode> RHS;
 		if (tokens[currentToken].type == TokenType::OpenParenthesis)
 		{
+			SourceCodePosition functionCallStartPosition = tokens[currentToken].sourceCodePosition;
 			currentToken++;  // eat (
 			std::vector<std::unique_ptr<ASTNode>> Args;
 			while (tokens[currentToken].type != TokenType::ClosedParenthesis) {
@@ -433,7 +446,7 @@ std::unique_ptr<ASTNode> Lexer::ParseBinaryOperatorRHS(int ExprPrec,
 			// Eat the ')'.
 			currentToken++;
 
-			LHS = std::make_unique<CallExprASTN>(std::move(LHS), std::move(Args));
+			LHS = std::make_unique<CallExprASTN>(std::move(LHS), std::move(Args), functionCallStartPosition);
 			continue;
 		}
 		else if (tokens[currentToken].type == TokenType::OpenSquareBrace)
@@ -450,7 +463,7 @@ std::unique_ptr<ASTNode> Lexer::ParseBinaryOperatorRHS(int ExprPrec,
 					break;
 
 				if (tokens[currentToken].type != TokenType::Comma)
-					assert(!"Expected ')' or ',' in argument list");
+					assert(!"Expected ']' or ',' in argument list");
 				currentToken++;
 			}
 

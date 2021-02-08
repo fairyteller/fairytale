@@ -107,13 +107,20 @@ enum class TokenType
 	Throw
 };
 
+struct SourceCodePosition
+{
+	const std::string* filename = nullptr;
+	int line;
+};
+
 struct Token
 {
 	TokenType type;
 	std::string content;
+	SourceCodePosition sourceCodePosition;
 };
 
-typedef Token(*TokenFactory)(const std::string&, size_t, size_t);
+typedef Token(*TokenFactory)(const std::string&, size_t, size_t, SourceCodePosition);
 
 struct SymbolSequence
 {
@@ -176,9 +183,9 @@ public:
 	{
 
 	}
-	Token build(const std::string& input, size_t startIndex, size_t endIndex)
+	Token build(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition pos)
 	{
-		return tokenFactory(input, startIndex, endIndex);
+		return tokenFactory(input, startIndex, endIndex, pos);
 	}
 	std::vector<SymbolSequence> allowedSymbolsSequence;
 	size_t currentFilterIndex;

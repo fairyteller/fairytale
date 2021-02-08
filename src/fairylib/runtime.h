@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <unordered_map>
 #include <map>
 #include <stack>
@@ -16,6 +17,13 @@
 
 class FairytaleCore;
 class ASTNode;
+
+struct TraceLine
+{
+	const std::string* filename;
+	int lineNo;
+	stringId functionName;
+};
 
 class Runtime
 {
@@ -349,6 +357,8 @@ public:
 
 	void save_to_register(objectId id)
 	{
+		if (regId != -1)
+			load_from_register();
 		regId = id;
 		inc_ref(id);
 	}
@@ -383,6 +393,7 @@ public:
 	void throw_exception(objectId exceptionObject)
 	{
 		save_to_register(exceptionObject);
+		savedStackTrace = currentStackTrace;
 		isStackUnwinding = true;
 		isExceptionRaised = true;
 	}
@@ -394,6 +405,18 @@ public:
 		throw_exception(exception);
 	}
 
+	void push_trace_line(TraceLine traceLine)
+	{
+		currentStackTrace.push(traceLine);
+	}
+
+	void pop_trace_line()
+	{
+		currentStackTrace.pop();
+	}
+
+	std::string get_last_stack_trace();
+	
 	size_t direct_memory_usage_semaphore;
 private:
 	struct StackFrame
@@ -409,6 +432,8 @@ private:
 	objectId globalScopeObject;
 	std::stack<objectId> interpreterStack;
 	std::stack<stringId> nameUsageStack;
+	std::stack<TraceLine> currentStackTrace;
+	std::stack<TraceLine> savedStackTrace;
 	std::stack<StackFrame> stackFrames;
 	bool isStackUnwinding = false;
 	bool isExceptionRaised = false;

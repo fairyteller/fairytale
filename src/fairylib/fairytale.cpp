@@ -15,9 +15,10 @@ Fairytale::~Fairytale()
 	delete m_pCore;
 }
 
-int Fairytale::interpret(const char* line)
+int Fairytale::interpret(const char* filename, const char* line)
 {
-	return m_pCore->interpret(line);
+	std::string* sFilename = new std::string(filename);
+	return m_pCore->interpret(*sFilename, line);
 }
 
 int Fairytale::interpret_file(const char* filename)
@@ -28,4 +29,9 @@ int Fairytale::interpret_file(const char* filename)
 Runtime* Fairytale::get_runtime()
 {
 	return m_pCore->get_runtime();
+}
+
+void Fairytale::set_io_handler(IFileSystemAbstraction* ioHandler)
+{
+	m_pCore->set_io_handler(ioHandler);
 }

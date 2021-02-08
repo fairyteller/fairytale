@@ -1,6 +1,7 @@
 #include "runtime.h"
 #include "standard_library.h"
 #include "abstract_syntax_tree.h"
+#include "fairytale_core.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -59,7 +60,7 @@ std::unique_ptr<ASTNode> Runtime::load_module(const std::string& filename)
 
 	input = sstr.str();
 
-	return std::move(m_core->loadAST(input));
+	return std::move(m_core->loadAST(filename, input));
 }
 
 int Runtime::execute_ast(std::unique_ptr<ASTNode>&& ast)
@@ -96,3 +97,14 @@ void Runtime::call(objectId id, objectId context)
 		throw_runtime_error("Object is not callable");
 }
 
+std::string Runtime::get_last_stack_trace()
+{
+	std::stringstream result;
+	while (!savedStackTrace.empty())
+	{
+		std::string functionName = getStringTable().getString(savedStackTrace.top().functionName);
+		result << "at " << functionName << " (" << *(savedStackTrace.top().filename) << ", line " <<  savedStackTrace.top().lineNo << " )\n";
+		savedStackTrace.pop();
+	}
+	return result.str();
+}

@@ -14,10 +14,10 @@ class Lexer
 {
 public:
 	std::vector<BytecodeItem> getBytecode(const std::string& input, Runtime* pRuntime);
-	void tokenize(const std::string& input);
+	void tokenize(const std::string& filename, const std::string& input);
 	std::vector<Token> convertToPostfix(const std::vector<Token>& tokens);
 	std::unique_ptr<ASTNode> buildAST();
-	std::unique_ptr<ASTNode> getAST(const std::string& input);
+	std::unique_ptr<ASTNode> getAST(const std::string& filename, const std::string& input);
 	std::vector<BytecodeItem> translate(const std::vector<Token>& tokens);
 
 

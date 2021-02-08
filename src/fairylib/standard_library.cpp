@@ -118,6 +118,10 @@ void assign(Runtime* pRuntime, objectId context)
 		pRuntime->throw_runtime_error("Assignment left side should be a reference");
 		return;
 	}
+	if (rhs->getType() == FairyObjectType::FairyFunction)
+	{
+		rhs->setattr(pRuntime, pRuntime->getStringTable().getStringId("traceName"), pRuntime->allocate(lhs->asReference().attributeKey));
+	}
 	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, rhs.id());
 	pRuntime->push_on_stack(lhs.id());
 }

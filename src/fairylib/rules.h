@@ -16,6 +16,7 @@ struct Rules
 	RangeBasedFilter validIdentifierFirstSymbol;
 	RangeBasedFilter validIdentifierSymbol;
 	RangeBasedFilter expressionEnd;
+	RangeBasedFilter newLine;
 	RangeBasedFilter quote;
 	RangeBasedFilter stringContentSymbol;
 	RangeBasedFilter numberSign;
@@ -29,6 +30,7 @@ struct Rules
 	TokenRules identifierRule;
 	TokenRules parenthesisRule;
 	TokenRules expressionEndRule;
+	TokenRules newLineRule;
 	TokenRules stringLiteralRule;
 	TokenRules commentRule;
 	TokenRules squareBracetRule;
@@ -41,15 +43,16 @@ struct Rules
 		return TokPrec;
 	}
 
-	static Token createNumberToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createNumberToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		token.type = TokenType::Number;
 		token.content = input.substr(startIndex, endIndex - startIndex);
+		token.sourceCodePosition = position;
 		return token;
 	}
 
-	static Token createParenthesisToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createParenthesisToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		if (input[startIndex] == '(')
@@ -59,10 +62,11 @@ struct Rules
 		if (input[startIndex] == ',')
 			token.type = TokenType::Comma;
 		token.content = input[startIndex];
+		token.sourceCodePosition = position;
 		return token;
 	}
 
-	static Token createBraceToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createBraceToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		if (input[startIndex] == '{')
@@ -70,10 +74,11 @@ struct Rules
 		if (input[startIndex] == '}')
 			token.type = TokenType::ClosedBrace;
 		token.content = input[startIndex];
+		token.sourceCodePosition = position;
 		return token;
 	}
 
-	static Token createSquareBraceToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createSquareBraceToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		if (input[startIndex] == '[')
@@ -81,20 +86,23 @@ struct Rules
 		if (input[startIndex] == ']')
 			token.type = TokenType::ClosedSquareBrace;
 		token.content = input[startIndex];
+		token.sourceCodePosition = position;
 		return token;
 	}
-	static Token createOperatorToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createOperatorToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		token.type = TokenType::BinaryOperator;
 		token.content = input.substr(startIndex, endIndex - startIndex);
+		token.sourceCodePosition = position;
 		return token;
 	}
 
-	static Token createIdentifierToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createIdentifierToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		token.content = input.substr(startIndex, endIndex - startIndex);
+		token.sourceCodePosition = position;
 		auto assumedKeyword = input.substr(startIndex, endIndex - startIndex);
 		if (assumedKeyword == "true" || assumedKeyword == "false")
 		{
@@ -152,20 +160,22 @@ struct Rules
 		return token;
 	}
 
-	static Token createStringLiteralToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createStringLiteralToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		token.type = TokenType::String;
 		token.content = input.substr(startIndex + 1, endIndex - startIndex - 2);
+		token.sourceCodePosition = position;
 		return token;
 
 	}
 
-	static Token createExpressionEndToken(const std::string& input, size_t startIndex, size_t endIndex)
+	static Token createExpressionEndToken(const std::string& input, size_t startIndex, size_t endIndex, SourceCodePosition position)
 	{
 		Token token;
 		token.type = TokenType::ExpressionEnd;
 		token.content = input.substr(startIndex, endIndex - startIndex);
+		token.sourceCodePosition = position;
 		return token;
 	}
 
@@ -186,7 +196,8 @@ struct Rules
 		englishLetters.set({ 'A','Z' }).unite({ 'a', 'z' });
 		validIdentifierFirstSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_');
 		validIdentifierSymbol.set({ 'A','Z' }).unite({ 'a', 'z' }).unite('_').unite({ '0','9' });
-		expressionEnd.set('\n').unite(';').unite('\0').unite('\r');
+		newLine.set('\n');
+		expressionEnd.set(';').unite('\0').unite('\r');
 		commentEnd.set('\n').unite('\0');
 		quote.set('\"');
 		numberSign.set('#');
@@ -201,6 +212,7 @@ struct Rules
 		braceRule.setFactory(createBraceToken) << SymbolSequence{ 1, 1, brace };
 		squareBracetRule.setFactory(createSquareBraceToken) << SymbolSequence{ 1, 1, squareBrace };
 		expressionEndRule.setFactory(createExpressionEndToken) << SymbolSequence{ 1, 1, expressionEnd };
+		newLineRule.setFactory(createExpressionEndToken) << SymbolSequence{ 1, 1, newLine };
 		stringLiteralRule.setFactory(createStringLiteralToken) << SymbolSequence{ 1, 1, quote } << SymbolSequence{ 0, UINT32_MAX, stringContentSymbol } << SymbolSequence{ 1, 1, quote };
 		commentRule.setFactory(nullptr) << SymbolSequence{ 1, 1, numberSign } << SymbolSequence{ 0, UINT32_MAX, commentContentSymbol } << SymbolSequence{ 1, 1, commentEnd };
 
