@@ -109,7 +109,6 @@ public:
 class AccessAttribASTN : public ASTNode {
 	std::string Op;
 	std::unique_ptr<ASTNode> LHS, RHS;
-
 public:
 	AccessAttribASTN(const std::string& op, std::unique_ptr<ASTNode> LHS,
 		std::unique_ptr<ASTNode> RHS)
@@ -128,11 +127,12 @@ public:
 class CallExprASTN : public ASTNode {
 	std::unique_ptr<ASTNode> Callee;
 	std::vector<std::unique_ptr<ASTNode>> Args;
-
+	SourceCodePosition sourceCodePosition;
 public:
 	CallExprASTN(std::unique_ptr<ASTNode> Callee,
-		std::vector<std::unique_ptr<ASTNode>> Args)
-		: Callee(std::move(Callee)), Args(std::move(Args)) {}
+		std::vector<std::unique_ptr<ASTNode>> Args,
+		SourceCodePosition sourceCodePosition)
+		: Callee(std::move(Callee)), Args(std::move(Args)), sourceCodePosition(sourceCodePosition) {}
 	virtual void execute(Runtime* pRuntime, objectId context)
 	{
 		Callee->execute(pRuntime, context);
@@ -148,7 +148,15 @@ public:
 		{
 			ObjectRef dereferencedCallee = pRuntime->safe_dereference(callee);
 			EXCEPTION_BARRIER
+			stringId functionId = pRuntime->getStringTable().getStringId("<anonymous>");
+			objectId traceName = pRuntime->getattr(dereferencedCallee.id(), pRuntime->getStringTable().getStringId("traceName"));
+			if (pRuntime->getObject(traceName)->getType() == FairyObjectType::String)
+			{
+				functionId = pRuntime->getObject(traceName)->toStringId(pRuntime);
+			}
+			pRuntime->push_trace_line(TraceLine{sourceCodePosition.filename, sourceCodePosition.line, functionId});
 			pRuntime->call(dereferencedCallee.id(), callee->asReference().ownerTable);
+			pRuntime->pop_trace_line();
 			EXCEPTION_BARRIER
 		}
 		else
@@ -302,7 +310,6 @@ public:
 class WhileASTN : public ASTNode {
 	std::unique_ptr<ASTNode> condition;
 	std::unique_ptr<ASTNode> innerBlock;
-
 public:
 	WhileASTN() {}
 	void setCondition(std::unique_ptr<ASTNode>&& node)
