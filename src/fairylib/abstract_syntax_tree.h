@@ -180,7 +180,7 @@ public:
 			EXCEPTION_BARRIER
 		}
 		stringId indexMethodSID = pRuntime->getStringTable().getStringId("__index__");
-		objectId indexMethod = collection->getattr(pRuntime, indexMethodSID);
+		objectId indexMethod = pRuntime->getattr(collection.id(), indexMethodSID);
 		EXCEPTION_BARRIER
 		pRuntime->call(indexMethod, collection.id());
 		EXCEPTION_BARRIER

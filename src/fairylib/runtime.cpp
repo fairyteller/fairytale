@@ -11,8 +11,11 @@ Runtime::Runtime(FairytaleCore* pCore)
 	, globalScopeObject(-1)
 	, direct_memory_usage_semaphore(0)
 {
+	noneObject = allocate(FairyObjectType::None);
+	inc_ref(noneObject);
 	globalScopeObject = allocate(FairyObjectType::Module);
 	inc_ref(globalScopeObject);
+	assign_name_to_obj(globalScopeObject, "None", noneObject);
 	register_global_function("pow", pow_wrapper);
 	register_global_function("+", sum_wrapper);
 	register_global_function("-", sub_wrapper);
@@ -41,8 +44,10 @@ Runtime::Runtime(FairytaleCore* pCore)
 	register_global_function("str", str_wrapper);
 	register_global_function("bool", bool_wrapper);
 	register_global_function("import_module", ::import_module);
-	register_global_function("getattr", getattr);
-	register_global_function("setattr", setattr);
+	register_global_function("getattr", ::getattr);
+	register_global_function("setattr", ::setattr);
+	register_global_function("getattr", getattr_direct);
+	register_global_function("setattr", setattr_direct);
 	register_global_function("array", array);
 	register_global_function("object", object);
 }
@@ -76,7 +81,7 @@ void Runtime::call_method(objectId id, stringId methodId)
 {
 	ObjectRef ref(this, id);
 	ObjectRef dereferenced_obj = safe_dereference(ref);
-	objectId callee = dereferenced_obj->getattr(this, methodId);
+	objectId callee = getattr(dereferenced_obj.id(), methodId);
 	call(callee, dereferenced_obj.id());
 
 }

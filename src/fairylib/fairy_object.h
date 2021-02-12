@@ -33,7 +33,8 @@ enum class FairyObjectType
 	Reference,
 	Class,
 	Module,
-	Deleted
+	Deleted,
+	None
 };
 
 struct FairyReference
@@ -332,8 +333,8 @@ public:
 
 	std::string describe();
 
-	void setattr(Runtime* pRuntime, stringId strid, objectId objid);
-	objectId getattr(Runtime* pRuntime, stringId key);
+	void setattr_internal(Runtime* pRuntime, stringId strid, objectId objid);
+	objectId getattr_internal(Runtime* pRuntime, stringId key);
 
 	const FairyTable& get_table()
 	{

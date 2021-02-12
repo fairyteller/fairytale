@@ -22,7 +22,7 @@ std::string FairyObject::describe()
 }
 
 
-void FairyObject::setattr(Runtime* pRuntime, stringId strid, objectId objid)
+void FairyObject::setattr_internal(Runtime* pRuntime, stringId strid, objectId objid)
 {
 	auto iter = table.find(strid);
 	if (iter != table.end())
@@ -34,14 +34,14 @@ void FairyObject::setattr(Runtime* pRuntime, stringId strid, objectId objid)
 	table[strid] = objid;
 }
 
-objectId FairyObject::getattr(Runtime* pRuntime, stringId key)
+objectId FairyObject::getattr_internal(Runtime* pRuntime, stringId key)
 {
 	auto iter = table.find(key);
 	if (iter != table.end())
 		return iter->second;
 
 	//or there is no object referenced by this key, return empty
-	return pRuntime->allocate(FairyObjectType::Unknown);
+	return pRuntime->getNone();
 }
 
 

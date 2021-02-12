@@ -69,6 +69,14 @@ void getattr(Runtime* pRuntime, objectId context);
 // setattr(obj, "key", value)
 void setattr(Runtime* pRuntime, objectId context);
 
+
+// attrobj = getattr_direct(obj, "key")
+void getattr_direct(Runtime* pRuntime, objectId context);
+
+// setattr_direct(obj, "key", value)
+void setattr_direct(Runtime* pRuntime, objectId context);
+
+
 // size = arr.size()
 void array_size(Runtime* pRuntime, objectId context);
 

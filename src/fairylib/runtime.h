@@ -94,7 +94,7 @@ public:
 	}
 	void assign_name_to_obj(objectId parentTable, stringId sid, objectId object)
 	{
-		getObject(parentTable)->setattr(this, sid, object);
+		getObject(parentTable)->setattr_internal(this, sid, object);
 	}
 
 	void push_on_stack(objectId id)
@@ -214,7 +214,7 @@ public:
 		objectId result = oid;
 		if (pObj->getType() == FairyObjectType::Reference)
 		{
-			result = getObject(pObj->asReference().ownerTable)->getattr(this, pObj->asReference().attributeKey);
+			result = getattr(pObj->asReference().ownerTable, pObj->asReference().attributeKey);
 		}
 		inc_ref(result); // maybe leak
 		return result;
@@ -225,7 +225,7 @@ public:
 		ObjectRef result = objectRef;
 		if (objectRef->getType() == FairyObjectType::Reference)
 		{
-			result.reset(getObject(objectRef->asReference().ownerTable)->getattr(this, objectRef->asReference().attributeKey));
+			result.reset(getattr(objectRef->asReference().ownerTable, objectRef->asReference().attributeKey));
 		}
 		return result;
 	}
@@ -394,6 +394,48 @@ public:
 		throw_exception(exception);
 	}
 
+	objectId getNone()
+	{
+		return noneObject;
+	}
+
+	objectId getattr_recursive(objectId owner, stringId key)
+	{
+		objectId lookupAttempt = getObject(owner)->getattr_internal(this, key);
+		if (lookupAttempt == getNone())
+		{
+			objectId proto = getObject(owner)->getattr_internal(this, getStringTable().getStringId("__prototype__"));
+			if (proto == getNone())
+			{
+				return getNone();
+			}
+			return getattr_recursive(proto, key);
+		}
+		return lookupAttempt;
+	}
+
+	objectId getattr(objectId owner, stringId key)
+	{
+		objectId __getattr__ = getattr_recursive(owner, getStringTable().getStringId("__getattr__"));
+		if (__getattr__ == noneObject)
+			return getattr_recursive(owner, key);
+		allocate_on_stack(key);
+		call(__getattr__, owner);
+		return pop_from_stack_and_keep_reference();
+	}
+
+	void setattr(objectId owner, stringId key, objectId value)
+	{
+		objectId __setattr__ = getattr_recursive(owner, getStringTable().getStringId("__setattr__"));
+		if (__setattr__ == noneObject)
+			getObject(owner)->setattr_internal(this, key, value);
+		else	
+		{
+			allocate_on_stack(key);
+			push_on_stack(value);
+			call(__setattr__, owner);
+		}
+	}
 	size_t direct_memory_usage_semaphore;
 private:
 	struct StackFrame
@@ -407,6 +449,7 @@ private:
 	std::stack<objectId> freeIds;
 	//FairyTable globalObjectTable;
 	objectId globalScopeObject;
+	objectId noneObject;
 	std::stack<objectId> interpreterStack;
 	std::stack<stringId> nameUsageStack;
 	std::stack<StackFrame> stackFrames;

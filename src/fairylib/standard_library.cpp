@@ -118,7 +118,7 @@ void assign(Runtime* pRuntime, objectId context)
 		pRuntime->throw_runtime_error("Assignment left side should be a reference");
 		return;
 	}
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, rhs.id());
+	pRuntime->setattr(lhs->asReference().ownerTable, lhs->asReference().attributeKey, rhs.id());
 	pRuntime->push_on_stack(lhs.id());
 }
 
@@ -132,7 +132,7 @@ void sum_compound(Runtime* pRuntime, objectId context)
 	sum_wrapper(pRuntime, context);
 	ObjectRef opResult = pRuntime->safe_pop();
 	assert(lhs->getType() == FairyObjectType::Reference);
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, opResult.id());
+	pRuntime->setattr(lhs->asReference().ownerTable, lhs->asReference().attributeKey, opResult.id());
 	pRuntime->push_on_stack(lhs.id());
 }
 
@@ -146,7 +146,7 @@ void sub_compound(Runtime* pRuntime, objectId context)
 	sub_wrapper(pRuntime, context);
 	ObjectRef opResult = pRuntime->safe_pop();
 	assert(lhs->getType() == FairyObjectType::Reference);
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, opResult.id());
+	pRuntime->setattr(lhs->asReference().ownerTable, lhs->asReference().attributeKey, opResult.id());
 	pRuntime->push_on_stack(lhs.id());
 }
 
@@ -161,7 +161,7 @@ void mul_compound(Runtime* pRuntime, objectId context)
 	mul_wrapper(pRuntime, context);
 	ObjectRef opResult = pRuntime->safe_pop();
 	assert(lhs->getType() == FairyObjectType::Reference);
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, opResult.id());
+	pRuntime->setattr(lhs->asReference().ownerTable, lhs->asReference().attributeKey, opResult.id());
 	pRuntime->push_on_stack(lhs.id());
 }
 
@@ -176,7 +176,7 @@ void div_compound(Runtime* pRuntime, objectId context)
 	div_wrapper(pRuntime, context);
 	ObjectRef opResult = pRuntime->safe_pop();
 	assert(lhs->getType() == FairyObjectType::Reference);
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, opResult.id());
+	pRuntime->setattr(lhs->asReference().ownerTable, lhs->asReference().attributeKey, opResult.id());
 	pRuntime->push_on_stack(lhs.id());
 }
 
@@ -191,7 +191,7 @@ void mod_compound(Runtime* pRuntime, objectId context)
 	mod_wrapper(pRuntime, context);
 	ObjectRef opResult = pRuntime->safe_pop();
 	assert(lhs->getType() == FairyObjectType::Reference);
-	pRuntime->getObject(lhs->asReference().ownerTable)->setattr(pRuntime, lhs->asReference().attributeKey, opResult.id());
+	pRuntime->setattr(lhs->asReference().ownerTable, lhs->asReference().attributeKey, opResult.id());
 	pRuntime->push_on_stack(lhs.id());
 }
 
@@ -321,7 +321,7 @@ void getattr(Runtime* pRuntime, objectId context)
 {
 	ObjectRef key = pRuntime->safe_pop_and_dereference();
 	ObjectRef table = pRuntime->safe_pop_and_dereference();
-	pRuntime->push_on_stack(table->getattr(pRuntime, key->asString()));
+	pRuntime->push_on_stack(pRuntime->getattr(table.id(), key->asString()));
 }
 
 // setattr(obj, "key", value)
@@ -330,25 +330,42 @@ void setattr(Runtime* pRuntime, objectId context)
 	ObjectRef value = pRuntime->safe_pop_and_dereference();
 	ObjectRef key = pRuntime->safe_pop_and_dereference();
 	ObjectRef table = pRuntime->safe_pop_and_dereference();
-	table->setattr(pRuntime, key->asString(), value.id());
+	pRuntime->setattr(table.id(), key->asString(), value.id());
+}
+
+// attrobj = getattr_direct(obj, "key")
+void getattr_direct(Runtime* pRuntime, objectId context)
+{
+	ObjectRef key = pRuntime->safe_pop_and_dereference();
+	ObjectRef table = pRuntime->safe_pop_and_dereference();
+	pRuntime->push_on_stack(table->getattr_internal(pRuntime, key->asString()));
+}
+
+// setattr_direct(obj, "key", value)
+void setattr_direct(Runtime* pRuntime, objectId context)
+{
+	ObjectRef value = pRuntime->safe_pop_and_dereference();
+	ObjectRef key = pRuntime->safe_pop_and_dereference();
+	ObjectRef table = pRuntime->safe_pop_and_dereference();
+	table->setattr_internal(pRuntime, key->asString(), value.id());
 }
 
 // size = arr.size()
 void array_size(Runtime* pRuntime, objectId context)
 {
 	ObjectRef self(pRuntime, context);
-	pRuntime->push_on_stack(self->getattr(pRuntime, pRuntime->getStringTable().getStringId("__size")));
+	pRuntime->push_on_stack(pRuntime->getattr(self.id(), pRuntime->getStringTable().getStringId("__size")));
 }
 
 // size = arr.unroll()
 void array_unroll(Runtime* pRuntime, objectId context)
 {
 	ObjectRef self(pRuntime, context);
-	ObjectRef sizeObj(pRuntime, self->getattr(pRuntime, pRuntime->getStringTable().getStringId("__size")));
+	ObjectRef sizeObj(pRuntime, pRuntime->getattr(self.id(), pRuntime->getStringTable().getStringId("__size")));
 	long long size = sizeObj->asLong();
 	for (int i = 0; i < size; ++i)
 	{
-		pRuntime->push_on_stack(self->getattr(pRuntime, pRuntime->getStringTable().getStringId(i)));
+		pRuntime->push_on_stack(pRuntime->getattr(self.id(), pRuntime->getStringTable().getStringId(i)));
 	}
 }
 
@@ -357,7 +374,7 @@ void array_get(Runtime* pRuntime, objectId context)
 	ObjectRef self(pRuntime, context);
 	ObjectRef key = pRuntime->safe_pop_and_dereference();
 	long long index = key->asLong();
-	pRuntime->push_on_stack(self->getattr(pRuntime, pRuntime->getStringTable().getStringId(index)));
+	pRuntime->push_on_stack(pRuntime->getattr(self.id(), pRuntime->getStringTable().getStringId(index)));
 }
 
 void array_index(Runtime* pRuntime, objectId context)
@@ -381,18 +398,18 @@ void array(Runtime* pRuntime, objectId context)
 		ObjectRef arg = pRuntime->safe_pop_and_dereference();
 		--remainingObjects;
 		stringId sid = pRuntime->getStringTable().getStringId(remainingObjects); // index is equal to amount of objects-1
-		newArray->setattr(pRuntime, sid, arg.id());
+		pRuntime->setattr(newArray.id(), sid, arg.id());
 	}
 	objectId __sizeObjId = pRuntime->allocate((long long)amountOfArguments);
-	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("__size"), __sizeObjId);
+	pRuntime->setattr(newArray.id(), pRuntime->getStringTable().getStringId("__size"), __sizeObjId);
 	objectId sizeObjId = pRuntime->allocate(array_size);
-	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("size"), sizeObjId);
+	pRuntime->setattr(newArray.id(), pRuntime->getStringTable().getStringId("size"), sizeObjId);
 	objectId getObjId = pRuntime->allocate(array_get);
-	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("get"), getObjId);
+	pRuntime->setattr(newArray.id(), pRuntime->getStringTable().getStringId("get"), getObjId);
 	objectId index = pRuntime->allocate(array_index);
-	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("__index__"), index);
+	pRuntime->setattr(newArray.id(), pRuntime->getStringTable().getStringId("__index__"), index);
 	objectId unrollObjId = pRuntime->allocate(array_unroll);
-	newArray->setattr(pRuntime, pRuntime->getStringTable().getStringId("unroll"), unrollObjId);
+	pRuntime->setattr(newArray.id(), pRuntime->getStringTable().getStringId("unroll"), unrollObjId);
 
 	pRuntime->push_on_stack(newArray.id());
 }
