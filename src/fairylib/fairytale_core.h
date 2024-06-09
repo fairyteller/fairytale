@@ -24,32 +24,32 @@ const int STDERR = 2;
 struct IFileSystemAbstraction
 {
 	virtual ~IFileSystemAbstraction() {}
-	virtual uint64_t open(const char* filename, const char* mode) = 0;
-	virtual void write(uint64_t file, const void* bytes, size_t amount) = 0;
-	virtual size_t read(uint64_t file, void* output, size_t buffsize) = 0;
+    virtual intptr_t open(const char* filename, const char* mode) = 0;
+    virtual void write(intptr_t file, const void* bytes, size_t amount) = 0;
+    virtual size_t read(intptr_t file, void* output, size_t buffsize) = 0;
 };
 
 class DefaultFileSystemAbstraction : public IFileSystemAbstraction
 {
 public:
 	virtual ~DefaultFileSystemAbstraction() {}
-	uint64_t open(const char* filename, const char* mode) override
+    intptr_t open(const char* filename, const char* mode) override
 	{
-		static_assert(sizeof(uint64_t) == sizeof(FILE*));
-		return reinterpret_cast<uint64_t>(fopen(filename, mode));
+        static_assert(sizeof(intptr_t) == sizeof(FILE*));
+        return reinterpret_cast<intptr_t>(fopen(filename, mode));
 	}
-	void write(uint64_t file, const void* bytes, size_t amount) override
+    void write(intptr_t file, const void* bytes, size_t amount) override
 	{
 		FILE* f = getStreamPtr(file);
 		fwrite(bytes, 1, amount, f);
 		fflush(f);
 	}
-	size_t read(uint64_t file, void* output, size_t buffsize) override
+    size_t read(intptr_t file, void* output, size_t buffsize) override
 	{
 		return fread(output, 1, buffsize, getStreamPtr(file));
 	}
 private:
-	FILE* getStreamPtr(uint64_t file)
+    FILE* getStreamPtr(intptr_t file)
 	{
 		switch (file)
 		{
